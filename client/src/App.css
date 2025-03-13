@@ -10,6 +10,27 @@
   flex-direction: column;
 }
 
+.without_arrow {
+  -moz-appearance: textfield; /* מסיר חצים בפיירפוקס */
+  -webkit-appearance: none; /* מסיר חצים בכרום וספארי */
+  appearance: none; /* מסיר חצים בכלל הדפדפנים */
+  
+  text-align: right; /* מיושר לימין */
+  direction: rtl; /* תמיכה בעברית */
+  
+  width: 10ch; /* מתאים ל-10 תווים בערך */
+  min-width: 11ch; /* שיהיה בגודל המינימלי הנדרש */
+  font-size: 15px; /* גודל הגופן */
+}
+
+.without_arrow::-webkit-outer-spin-button,
+.without_arrow::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+
+
 .manudrawer {
   background-color: #282c34; 
   text-align: right;

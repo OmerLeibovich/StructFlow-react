@@ -1,3 +1,5 @@
+
+
 import pygame
 import cv2
 import numpy as np
@@ -24,7 +26,8 @@ box_width = window_width // columns
 box_height = window_height // rows
 output_frame = None
 lock = threading.Lock()
-
+bfs_state=False
+visited_nodes = []
 # מבנה ה-AVL Tree
 class TreeNode:
     def __init__(self, key, parent=None):
@@ -42,8 +45,24 @@ class AVLTree:
         self.highest = 0 
 
     def insert(self, key):
+        if self.contains(key):
+            return
+        self.update_nodes() 
         self.root = self._insert(self.root, key)
         self.nodes.append(key)
+
+    def contains(self, key):
+        return self._contains(self.root, key)
+
+    def _contains(self, node, key):
+        if node is None:
+            return False
+        if key == node.key:
+            return True
+        elif key < node.key:
+            return self._contains(node.left, key)
+        else:
+            return self._contains(node.right, key)
 
     def _insert(self, node, key, parent=None):
         if node is None:
@@ -83,6 +102,7 @@ class AVLTree:
             return 0
         return self._get_height(node.left) - self._get_height(node.right)
     def delete(self, key):
+        self.update_nodes() 
         self.root = self._delete(self.root, key)
 
     def _delete(self, node, key):
@@ -167,32 +187,40 @@ class AVLTree:
         return x
     
 
-    def BFS_Search(self, highest, BFS_order):
-        current_level = BFS_order[highest:]
-        targets = []
-        if self.root is None:
-            return highest, BFS_order, targets
-
-        if not BFS_order:  
-            BFS_order.append(self.root)
-            self.visited.add(self.root.key)
-            targets.append(self.root)
-            return highest, BFS_order,targets
+    
+    def update_nodes(self):
+        self.nodes.clear()  
+        self.update_array(self.root, self.nodes)
+        print("Updated nodes:", self.nodes)
+    
+    
+    def update_array(self, node, array, index=0):
+        if node is not None:
+            
+            if index >= len(array):
+                array.extend([None] * (index - len(array) + 1)) 
 
         
+            array[index] = node.key
+            if len(array) > 1 and array[-1] == array[-2]:
+                array.remove(array[-1])
 
-        for node in current_level:
-            if node.left and node.left.key not in self.visited:
-                BFS_order.append(node.left)
-                self.visited.add(node.left.key)
-                targets.append(node.left)
-            if node.right and node.right.key not in self.visited:
-                BFS_order.append(node.right)
-                self.visited.add(node.right.key)
-                targets.append(node.right)
-            highest += 1
+            
+            self.update_array(node.left, array, 2 * index + 1)
+            self.update_array(node.right, array, 2 * index + 2)
+        else: 
+            if index < len(array):
+                if node is None:
+                    array[index] = None
 
-        return highest, BFS_order, targets
+    
+
+
+
+
+
+
+
 
 
 
@@ -206,6 +234,7 @@ def insert():
     data = request.get_json()
     key = int(data["key"])
     avl_tree.insert(key)
+    avl_tree.update_array(avl_tree.root, avl_tree.nodes)
     return jsonify({"status": "inserted", "key": key})
 
 @app.route('/delete', methods=['POST'])
@@ -222,7 +251,10 @@ def get_tree():
 
 @app.route('/bfs', methods=['GET'])
 def bfs():
-    global highest, BFS_order 
+
+    global highest, BFS_order,bfs_state,visited_nodes
+
+    bfs_state=True
 
    
     if 'highest' not in globals() or highest is None:
@@ -231,11 +263,11 @@ def bfs():
         BFS_order = []
 
 
-    highest, BFS_order, targets = avl_tree.BFS_Search(highest, BFS_order)
+    highest, BFS_order, targets = BFS_Search(avl_tree,highest,BFS_order)
     
     
     visited_nodes = [node.key for node in BFS_order]
-    print(visited_nodes)
+    
     highlighted_numbers = [node.key for node in targets]
 
     return jsonify({
@@ -250,37 +282,44 @@ def dfs():
     dfs_order = avl_tree.DFS_order()
     return jsonify({"dfs_order": dfs_order})
 
-def draw_tree(node, x, y, level=0, spacing=150):
+def draw_tree(node, x, y, level=0, spacing=150, visited_nodes=None):
     if node is None:
         return
 
+    node_color = (255, 0, 0) if visited_nodes is not None and node.key in visited_nodes else (0, 0, 255)
+
+    
+    # צייר את הצומת
+    pygame.draw.circle(screen, node_color, (x, y), 20)
+    pygame.draw.circle(screen, (0, 0, 0), (x, y), 21, 2)  # מסגרת שחורה
+
+    # הצגת המפתח בתוך הצומת
     font = pygame.font.Font(None, 36)
     text = font.render(str(node.key), True, (255, 255, 255))
+    text_rect = text.get_rect(center=(x, y))
+    screen.blit(text, text_rect)
 
-    pygame.draw.circle(screen, (0, 0, 255), (x, y), 20) 
-    pygame.draw.circle(screen, (0, 0, 0), (x, y), 21, 2) 
-    screen.blit(text, (x - 10, y - 10))
-
+    # קביעת מיקום הבא
     next_y = y + 75  
-
     spacing = max(75, spacing // 1.5)  
+    line_offset = 20  
 
-    line_offset = 20
-
+    # ציור חיבורי הילדים וקריאה רקורסיבית
     if node.left:
         x_left = x - spacing // (level + 1)
-        pygame.draw.line(screen, (0, 0, 0), (x, y+line_offset), (x_left, next_y), 2)
-        draw_tree(node.left, x_left, next_y, level + 1, spacing)
+        pygame.draw.line(screen, (0, 0, 0), (x, y + line_offset), (x_left, next_y), 2)
+        draw_tree(node.left, x_left, next_y, level + 1, spacing, visited_nodes)  # קריאה לתת-עץ
 
     if node.right:
         x_right = x + spacing // (level + 1)
-        pygame.draw.line(screen, (0, 0, 0), (x, y+line_offset), (x_right, next_y), 2)
-        draw_tree(node.right, x_right, next_y, level + 1, spacing)
+        pygame.draw.line(screen, (0, 0, 0), (x, y + line_offset), (x_right, next_y), 2)
+        draw_tree(node.right, x_right, next_y, level + 1, spacing, visited_nodes)  # קריאה לתת-עץ
+
 
 
 
 def render_tree():
-    global output_frame, lock
+    global output_frame, lock,visited_nodes,bfs_state
     running = True
     # messagebox.showinfo("Tutorial\n",
     #                     "Up Button : add Number to AVL Tree\nDown Button : remove Number from AVL Tree\n\n\n"
@@ -301,7 +340,12 @@ def render_tree():
         screen.fill((255, 255, 255))
 
         if avl_tree.root:
-            draw_tree(avl_tree.root, window_width // 2, 100) 
+            if bfs_state and visited_nodes:
+                print("Rendering BFS state with visited nodes:", visited_nodes)  # בדיקה
+                draw_tree(avl_tree.root, window_width // 2, 100, visited_nodes=visited_nodes)
+            else:
+                draw_tree(avl_tree.root, window_width // 2, 100, visited_nodes=[])
+
 
         frame = pygame.surfarray.array3d(screen)
         frame = np.rot90(frame)
@@ -310,9 +354,6 @@ def render_tree():
 
         with lock:
             output_frame = frame.copy()
-
-        
-
         clock.tick(30)
 
 

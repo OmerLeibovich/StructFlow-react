@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback} from "react";
+import '../App.css';
 
 const AVLTree = () => {
   const [inputValue, setInputValue] = useState("");
@@ -9,6 +10,7 @@ const AVLTree = () => {
   const fetchTreeData = useCallback(async () => {
     const response = await fetch("http://127.0.0.1:5000/get_tree");
     const data = await response.json();
+    
   
     setNodes((prevNodes) => 
       JSON.stringify(prevNodes) !== JSON.stringify(data.nodes) ? data.nodes : prevNodes
@@ -18,6 +20,8 @@ const AVLTree = () => {
   useEffect(() => {
     fetchTreeData();
   }, [fetchTreeData]);
+
+
 
   const handleInsert = async () => {
     if (!inputValue) return;
@@ -64,11 +68,23 @@ const AVLTree = () => {
     const data = await response.json();
     setDfsOrder(data.dfs_order);
   };
+  const formatList = (list) => {
+    return list
+      .filter((item, index, arr) => 
+        item !== null || index < arr.length - 1 
+      )
+      .map((item, index) => 
+        index === 0 ? item : "," + item  
+      )
+      .join(" ");
+};
+
 
   return (
     <div style={{ textAlign: "center" }}>
       <h2>AVL Tree</h2>
       <input
+      className="without_arrow"
         type="number"
         placeholder="הכנס מספר"
         value={inputValue}
@@ -78,9 +94,9 @@ const AVLTree = () => {
       <button onClick={handleDelete}>Delete</button>
       <button onClick={handleBFS}>BFS</button>
       <button onClick={handleDFS}>DFS</button>
-      <h3>Tree Nodes: {nodes.join(", ")}</h3>
-      <h3>BFS Order: {bfsOrder.join(", ")}</h3>
-      <h3>DFS Order: {dfsOrder.join(", ")}</h3>
+      <h3>Tree Nodes: {formatList(nodes)}</h3>
+      <h3>BFS Order: {formatList(bfsOrder)}</h3>
+      <h3>DFS Order: {formatList(dfsOrder)}</h3>
       <img
         src={`http://127.0.0.1:5000/video_feed?t=${Date.now()}`} 
         alt="AVL Tree"
