@@ -98,7 +98,7 @@ const AVLTree = () => {
       <h3>BFS Order: {formatList(bfsOrder)}</h3>
       <h3>DFS Order: {formatList(dfsOrder)}</h3>
       <img
-        src={`http://127.0.0.1:5000/video_feed?t=${Date.now()}`} 
+        src={`http://127.0.0.1:5000/video_feed_AVL_Tree?t=${Date.now()}`} 
         alt="AVL Tree"
         style={{ width: "600px", height: "600px", border: "2px solid black" }}
       />

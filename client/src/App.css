@@ -11,16 +11,16 @@
 }
 
 .without_arrow {
-  -moz-appearance: textfield; /* מסיר חצים בפיירפוקס */
-  -webkit-appearance: none; /* מסיר חצים בכרום וספארי */
-  appearance: none; /* מסיר חצים בכלל הדפדפנים */
+  -moz-appearance: textfield; 
+  -webkit-appearance: none; 
+  appearance: none;
   
-  text-align: right; /* מיושר לימין */
-  direction: rtl; /* תמיכה בעברית */
+  text-align: right; 
+  direction: rtl; 
   
-  width: 10ch; /* מתאים ל-10 תווים בערך */
-  min-width: 11ch; /* שיהיה בגודל המינימלי הנדרש */
-  font-size: 15px; /* גודל הגופן */
+  width: 10ch;
+  min-width: 11ch;
+  font-size: 15px; 
 }
 
 .without_arrow::-webkit-outer-spin-button,
@@ -30,39 +30,95 @@
 }
 
 
-
 .manudrawer {
-  background-color: #282c34; 
-  text-align: right;
-  color: white; 
-  padding: 2px 5px; 
-  font-size: 30px; 
-  border-radius: 4px;
-  position: absolute; 
-  right: 0
+  background: linear-gradient(135deg, #1e1e1e, #1e1e1e);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(255, 117, 140, 0.5);
+  transition: all 0.3s ease-in-out;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+
+  
+  position: absolute; /* קובע את מיקום הכפתור בצורה מוחלטת */
+  top: 20px; /* רווח מלמעלה */
+  right: 20px; /* מיקומו בצד ימין */
 }
 
-.manudrawerSubButtons {
-  background-color: #282c34; 
-  text-align: center; /* ממרכז את הטקסט */
-  color: white; 
-  padding: 3px 6px; 
-  font-size: 30px; 
-  border-radius: 4px;
-  
-  display: flex;       /* Flexbox */
-  justify-content: center; /* ממרכז אופקית */
-  align-items: center;     /* ממרכז אנכית */
-  
-  width: 200px;         /* רוחב קבוע */
-  margin: 0 auto;       /* ממרכז את האלמנט במסך */
+.manudrawer:hover {
+  background: linear-gradient(135deg, #1e1e1e, #1e1e1e); 
+  transform: scale(1.1); 
+  box-shadow: 0 6px 15px rgba(255, 61, 104, 0.7); 
 }
 
-.title-center {
-  width: 100%;
+.manudrawer:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 5px rgba(255, 61, 104, 0.5);
+}
+
+
+/* עיצוב כללי לקאנבס */
+.offcanvas {
+  background: rgba(30, 30, 30, 1); /* רקע כהה עם שקיפות */
+  color: white;
+  border-left: 3px solid #61dafb; /* מסגרת מודגשת */
+}
+
+/* עיצוב לכותרת */
+.offcanvas-title {
+  font-size: 28px;
+  font-weight: bold;
   text-align: center;
+  color: #61dafb; /* צבע תואם */
+  width: 100%;
 }
 
+/* עיצוב כללי לכפתורים בתוך הקאנבס */
+.manudrawerSubButtons {
+  background: linear-gradient(135deg, #3a3d40, #1e1e1e); /* מעבר צבעים */
+  color: white;
+  padding: 10px 20px;
+  font-size: 18px;
+  border-radius: 8px;
+  border: 1px solid #61dafb;
+  margin: 10px 0;
+  width: 100%;
+  transition: all 0.3s ease-in-out;
+}
+
+
+.manudrawerSubButtons:hover {
+  background: #61dafb;
+  color: black;
+  transform: scale(1.05);
+}
+.link-button {
+  display: block;
+  width: 100%;
+  margin-top: auto;
+}
+
+/* עיצוב ראש התפריט */
+.offcanvas-header {
+  border-bottom: 2px solid #61dafb;
+}
+
+/* עיצוב גוף התפריט */
+.offcanvas-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* כפתור הסגירה */
+.offcanvas .btn-close {
+  filter: invert(1);
+}
 
 .full-height-row {
   height: 100%;
