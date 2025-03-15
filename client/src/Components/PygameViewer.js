@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback} from "react";
 import '../App.css';
+import { Button } from "react-bootstrap";
 
 const AVLTree = () => {
   const [inputValue, setInputValue] = useState("");
@@ -24,50 +25,131 @@ const AVLTree = () => {
 
 
   const handleInsert = async () => {
-    if (!inputValue) return;
+    if (!inputValue) {
+      alert("Error: Please enter a number!");
+      return;
+    }
+  
+    const numValue = parseInt(inputValue, 10);
+  
+    if (isNaN(numValue) || numValue < 0 || numValue > 999) {
+      setInputValue("");
+      alert("Error: Number must be between 0 and 999!");
+      return;
+    }
+  
+    if (nodes.includes(numValue)) {
+      setInputValue("");
+      alert("Error: Number already exists in the tree!");
+      return;
+    }
+  
     try {
-      await fetch("http://127.0.0.1:5000/insert", {
+      const response = await fetch("http://127.0.0.1:5000/insert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: inputValue }),
+        body: JSON.stringify({ key: numValue }),
       });
+  
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Unknown error occurred");
+      }
+  
       setInputValue("");
-      await fetchTreeData(); 
+      await fetchTreeData();
     } catch (error) {
-      console.error("Error inserting node:", error);
+      alert(`Error: ${error.message}`);
     }
   };
-
+  
   const handleDelete = async () => {
-    if (!inputValue) return;
+    if (!inputValue) {
+      alert("Error: Please enter a number!");
+      return;
+    }
+  
+    const numValue = parseInt(inputValue, 10);
+  
+    if (isNaN(numValue)) {
+      setInputValue("");
+      alert("Error: Invalid number!");
+      return;
+    }
+  
+    if (!nodes.includes(numValue)) {
+      setInputValue("");
+      alert("Error: Number does not exist in the tree!");
+      return;
+    }
+  
     try {
-      await fetch("http://127.0.0.1:5000/delete", {
+      const response = await fetch("http://127.0.0.1:5000/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: inputValue }),
+        body: JSON.stringify({ key: numValue }),
       });
+  
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Unknown error occurred");
+      }
+  
       setInputValue("");
-      await fetchTreeData(); 
+      await fetchTreeData();
     } catch (error) {
-      console.error("Error deleting node:", error);
+      alert(`Error: ${error.message}`);
     }
   };
+  
   const handleBFS = async () => {
     try {
       const response = await fetch("http://127.0.0.1:5000/bfs");
       const data = await response.json();
-      setBfsOrder(data.bfs_order); 
+  
+      if (!response.ok) {
+        throw new Error(data.error || "Unknown error occurred");
+      }
+  
+      setBfsOrder(data.bfs_order);
     } catch (error) {
-      console.error("Error fetching BFS data:", error);
+      setInputValue("");
+      alert(`Error: ${error.message}`);
     }
   };
   
-
   const handleDFS = async () => {
-    const response = await fetch("http://127.0.0.1:5000/dfs");
-    const data = await response.json();
-    setDfsOrder(data.dfs_order);
+    try {
+      const response = await fetch("http://127.0.0.1:5000/dfs");
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.error || "Unknown error occurred");
+      }
+  
+      setDfsOrder(data.dfs_order);
+    } catch (error) {
+      setInputValue = ""
+      alert(`Error: ${error.message}`);
+    }
   };
+  
+  const Reset = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/reset");
+      const data = await response.json();
+  
+      setNodes([]);
+      setDfsOrder([]);
+      setBfsOrder([]);
+    } catch (error) {
+      console.error("Error resetting tree:", error);
+    }
+  };
+  
+  
   const formatList = (list) => {
     return list
       .filter((item, index, arr) => 
@@ -80,32 +162,40 @@ const AVLTree = () => {
 };
 
 
-  return (
-    <div style={{ textAlign: "center" }}>
-      <h2>AVL Tree</h2>
+return (
+  <div style={{ textAlign: "center" }}>
       <input
       className="without_arrow"
-        type="number"
-        placeholder="הכנס מספר"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-      />
-     <button onClick={handleInsert}>Insert</button>
-      <button onClick={handleDelete}>Delete</button>
-      <button onClick={handleBFS}>BFS</button>
-      <button onClick={handleDFS}>DFS</button>
-      <h3>Tree Nodes: {formatList(nodes)}</h3>
-      <h3>BFS Order: {formatList(bfsOrder)}</h3>
-      <h3>DFS Order: {formatList(dfsOrder)}</h3>
+      type="text"  // שים לב ששינינו ל-"text" כדי לשלוט טוב יותר על הקלט
+      placeholder="Insert number"
+      value={inputValue}
+      onChange={(e) => {
+        const value = e.target.value.replace(/\D/g, ""); // מסיר כל תו שאינו מספר
+        setInputValue(value);
+      }}
+    />
+    <button onClick={handleInsert}>Insert</button>
+    <button onClick={handleDelete}>Delete</button>
+    <button onClick={handleBFS}>BFS</button>
+    <button onClick={handleDFS}>DFS</button>
+    <h3>Tree Nodes: {formatList(nodes)}</h3>
+    <h3>BFS Order: {formatList(bfsOrder)}</h3>
+    <h3>DFS Order: {formatList(dfsOrder)}</h3>
+    <div style={{ display: "flex", justifyContent: "center" }}>
       <img
         src={`http://127.0.0.1:5000/video_feed_AVL_Tree?t=${Date.now()}`} 
         alt="AVL Tree"
         style={{ width: "600px", height: "600px", border: "2px solid black" }}
       />
     </div>
-  );
-};
+
+    {/* כפתור Reset ברוחב מלא מתחת לחלון */}
+    <div style={{ width: "600px", margin: "20px auto" }}>
+      <Button onClick={Reset} style={{ width: "100%", height: "50px", fontSize: "18px" }}>
+        Reset
+      </Button>
+    </div>
+  </div>
+)};
 
 export default AVLTree;
-
-

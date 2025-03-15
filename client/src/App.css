@@ -18,7 +18,7 @@
   text-align: right; 
   direction: rtl; 
   
-  width: 10ch;
+  width: 12.5ch;
   min-width: 11ch;
   font-size: 15px; 
 }
@@ -44,9 +44,9 @@
   letter-spacing: 2px;
 
   
-  position: absolute; /* קובע את מיקום הכפתור בצורה מוחלטת */
-  top: 20px; /* רווח מלמעלה */
-  right: 20px; /* מיקומו בצד ימין */
+  position: absolute; 
+  top: 20px; 
+  right: 20px; 
 }
 
 .manudrawer:hover {
@@ -100,6 +100,12 @@
   display: block;
   width: 100%;
   margin-top: auto;
+}
+
+.Sub-button {
+  display: block;
+  width: 100%;
+  
 }
 
 /* עיצוב ראש התפריט */

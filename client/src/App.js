@@ -80,7 +80,7 @@ function App() {
                       <Offcanvas.Title className="offcanvas-title">Tree</Offcanvas.Title>
                     </Offcanvas.Header>
                     <Offcanvas.Body>
-                      <Link to="/tree">
+                      <Link to="/tree" className="Sub-button">
                         <Button className="manudrawerSubButtons" onClick={() => handleTogglePage('AVL_Tree', true)}>
                           AVL Tree
                         </Button>
