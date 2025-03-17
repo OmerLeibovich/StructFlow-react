@@ -1,26 +1,25 @@
-import React from "react";
-import { Button } from "react-bootstrap";
-import { useNavigate } from "react-router-dom"; // ייבוא של useNavigate
+import React, { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import AVLTree from "../Components/PygameViewer";
 
 function Tree({ setShow }) {
-  const navigate = useNavigate(); // יצירת פונקציה לניווט
+  const location = useLocation(); // ✅ בודק לאיזה דף המשתמש נכנס
 
-  const handleBack = () => {
-    setShow({ AVL_Tree: false, main: false, tree: false }); // מחזיר את ה-state לדף הראשי
-    navigate('/'); // ניווט לדף הראשי
-  };
+  useEffect(() => {
+    // ✅ שומר נתונים רק אם המשתמש עשה רענון
+    sessionStorage.setItem("treeSessionActive", "true"); 
+
+    return () => {
+      if (sessionStorage.getItem("treeSessionActive")) {
+        localStorage.clear();
+        sessionStorage.removeItem("treeSessionActive");
+        setShow({ AVL_Tree: false, main: false, tree: false, sorts: false, graph: false, structures: false });
+      }
+    };
+  }, [location.pathname]); 
+
   return (
     <div>
-      {/* כפתור חזרה בצד שמאל למעלה */}
-      <Button 
-        variant="secondary" 
-        style={{ position: 'absolute', top: '10px', left: '10px' }} 
-        onClick={handleBack}   // ניווט לדף הראשי
-      >
-        חזרה
-      </Button>
-
       <AVLTree />
     </div>
   );

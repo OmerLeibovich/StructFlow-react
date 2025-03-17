@@ -13,6 +13,26 @@ function App() {
   useEffect(() => {
   }, [show.AVL_Tree]);
 
+  const Reset_AVL_Tree = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/reset");
+      if (!response.ok) {
+        throw new Error("Failed to reset the tree");
+      }
+  
+      localStorage.clear(); 
+      sessionStorage.removeItem("sessionActive");
+  
+      setShow({ main: false, tree: false, sorts: false, graph: false, structures: false });
+    } catch (error) {
+      console.error("Error resetting tree:", error);
+    }
+  };
+  
+
+  
+  
+
 
   const handleToggle = (menu, state) => setShow(prev => ({ ...prev, [menu]: state }));
   const handleTogglePage = (page, state) => {
@@ -62,10 +82,15 @@ function App() {
                       </Button>
                       {/*return to HomePage*/}
                       <Link to="/" className="link-button">
-                      <Button className="manudrawerSubButtons" onClick={() => setShow({ main: false, tree: false, sorts: false, graph: false, structures: false })}>
+                      <Button
+                        className="manudrawerSubButtons"
+                        onClick={async () => {
+                          await Reset_AVL_Tree(); 
+                        }}
+                      >
                         HomePage
                       </Button>
-                      </Link>
+                    </Link>
                       </Offcanvas.Body>
                     </Offcanvas>
 
@@ -124,7 +149,7 @@ function App() {
                   <Offcanvas.Body>
                   </Offcanvas.Body>
                 </Offcanvas>
-              <h1 style={{ color: 'white', textAlign: 'center', marginTop: '50px' }}>
+              <h1 style={{ color: 'white', textAlign: 'center' }}>
               {Title}
               </h1>
             </Col>

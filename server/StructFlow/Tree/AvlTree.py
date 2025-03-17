@@ -16,7 +16,7 @@ CORS(app)
 
 # אתחול Pygame
 pygame.init()
-window_width, window_height = 800, 800
+window_width, window_height = 700, 650
 screen = pygame.Surface((window_width, window_height))
 clock = pygame.time.Clock()
 
@@ -44,9 +44,16 @@ class AVLTree:
         self.visited = set()
         self.nodes = []
         self.highest = 0 
+        self.max_size = 31
 
     def insert(self, key):
         if self.contains(key):
+            return
+        
+        valid_nodes = [n for n in self.nodes if n is not None]  
+        current_height = self._get_height(self.root)
+        if len(valid_nodes) >= self.max_size and current_height >= 5:
+            print("Error: Tree is full (max size reached: 31)")
             return
         self.update_nodes() 
         self.root = self._insert(self.root, key)
@@ -251,68 +258,70 @@ def get_tree():
 
 @app.route('/bfs', methods=['GET'])
 def bfs():
-
     global highest, BFS_order,bfs_state,visited_nodes,dfs_state
 
-    if not dfs_state:   
+    if dfs_state:  
+        return jsonify({"error": "Cannot run DFS while BFS is active"}), 400
+ 
 
-        bfs_state=True
+    bfs_state=True
 
     
-        if 'highest' not in globals() or highest is None:
-            highest = 0
-        if 'BFS_order' not in globals() or not BFS_order:
-            BFS_order = []
+    if 'highest' not in globals() or highest is None:
+        highest = 0
+    if 'BFS_order' not in globals() or not BFS_order:
+        BFS_order = []
 
 
-        highest, BFS_order, BFS_targets = BFS_Search(avl_tree,highest,BFS_order)
+    highest, BFS_order, BFS_targets = BFS_Search(avl_tree,highest,BFS_order)
         
         
-        visited_nodes = [node.key for node in BFS_order]
+    visited_nodes = [node.key for node in BFS_order]
         
-        highlighted_numbers = [node.key for node in BFS_targets]
+    highlighted_numbers = [node.key for node in BFS_targets]
 
-        return jsonify({
-            "bfs_order": visited_nodes,
-            "highlighted_numbers": highlighted_numbers
+    return jsonify({
+        "bfs_order": visited_nodes,
+           "highlighted_numbers": highlighted_numbers
         })
     
-    else:
-        return jsonify({"error": "Cannot run BFS while DFS is active"}), 400
 
 @app.route('/dfs', methods=['GET'])
 def dfs():
     global Stack, DFS_order, dfs_state, DFS_Targets,bfs_state
-    if not bfs_state:
-        dfs_state = True
 
-        if 'DFS_Targets' not in globals() or DFS_Targets is None:
-            DFS_Targets = []
 
-        if 'Stack' not in globals() or Stack is None:
-            Stack = []
-        if 'DFS_order' not in globals() or not DFS_order:
-            DFS_order = []
+    if bfs_state: 
+        return jsonify({"error": "Cannot run DFS while BFS is active"}), 400
+    
+    dfs_state = True
 
-        Stack, DFS_order, DFS_Target = DFS_Search(avl_tree, Stack, DFS_order)
+    if 'DFS_Targets' not in globals() or DFS_Targets is None:
+        DFS_Targets = []
+
+    if 'Stack' not in globals() or Stack is None:
+        Stack = []
+    if 'DFS_order' not in globals() or not DFS_order:
+        DFS_order = []
+
+    Stack, DFS_order, DFS_Target = DFS_Search(avl_tree, Stack, DFS_order)
 
         
-        if DFS_Target is not None:  
-            DFS_Targets.append(DFS_Target)  
+    if DFS_Target is not None:  
+        DFS_Targets.append(DFS_Target)  
 
-        print("DFS Target (Before jsonify):", DFS_Targets)  
+    print("DFS Target (Before jsonify):", DFS_Targets)  
 
-        return jsonify({"dfs_order": DFS_Targets})
-    else:
-        return jsonify({"error": "Cannot run DFS while BFS is active"}), 400
+    return jsonify({"dfs_order": DFS_Targets})
+
 
 
 
 @app.route('/reset', methods=['GET'])
 def reset():
-    global avl_tree, Stack, DFS_order, BFS_order, DFS_Targets, bfs_state, dfs_state
+    global avl_tree, Stack, DFS_order, BFS_order, DFS_Targets, bfs_state, dfs_state, highest
 
-    # אתחול מחדש של המשתנים
+    # אתחול מחדש של העץ
     avl_tree = AVLTree()  
     Stack = []
     DFS_order = []
@@ -320,12 +329,16 @@ def reset():
     DFS_Targets = []
     bfs_state = False
     dfs_state = False
+    highest = 0  # אתחול מחדש של highest
 
     return jsonify({"status": "reset successful", "nodes": []}), 200
 
 
 
-def draw_tree(node, x, y, level=0, spacing=150, visited_nodes=None,DFS_Targets=None):
+
+
+
+def draw_tree(node, x, y, level=0, spacing=150, visited_nodes=None, DFS_Targets=None):
     if node is None:
         return
 
@@ -333,54 +346,37 @@ def draw_tree(node, x, y, level=0, spacing=150, visited_nodes=None,DFS_Targets=N
                                  and node.key in visited_nodes) or (DFS_Targets is not None 
                                                                     and node.key in DFS_Targets) else (0, 0, 255)
 
-    
- 
+    # ציור מעגל עבור הצומת
     pygame.draw.circle(screen, node_color, (x, y), 20)
-    pygame.draw.circle(screen, (0, 0, 0), (x, y), 21, 2) 
+    pygame.draw.circle(screen, (0, 0, 0), (x, y), 21, 2)  
 
-   
+    # ציור המפתח (key) של הצומת
     font = pygame.font.Font(None, 36)
     text = font.render(str(node.key), True, (255, 255, 255))
     text_rect = text.get_rect(center=(x, y))
     screen.blit(text, text_rect)
 
-
     next_y = y + 75  
     spacing = max(75, spacing // 1.5)  
     line_offset = 20  
 
-    
+    # ציור הקווים והקריאה הרקורסיבית
     if node.left:
-        x_left = x - spacing // (level + 1)
-        pygame.draw.line(screen, (0, 0, 0), (x, y + line_offset), (x_left, next_y), 2)
-        draw_tree(node.left, x_left, next_y, level + 1, spacing, visited_nodes,DFS_Targets)  # קריאה לתת-עץ
+        x_left = x - (700 // (2 ** (level + 2)))
+        y_left = y + 100
+        pygame.draw.line(screen, (0, 0, 0), (x, y + line_offset), (x_left, y_left), 2)
+        draw_tree(node.left, x_left, y_left, level + 1, spacing, visited_nodes, DFS_Targets)
 
     if node.right:
-        x_right = x + spacing // (level + 1)
-        pygame.draw.line(screen, (0, 0, 0), (x, y + line_offset), (x_right, next_y), 2)
-        draw_tree(node.right, x_right, next_y, level + 1, spacing, visited_nodes,DFS_Targets)  # קריאה לתת-עץ
-
-
+        x_right = x + (700 // (2 ** (level + 2)))
+        y_right = y + 100
+        pygame.draw.line(screen, (0, 0, 0), (x, y + line_offset), (x_right, y_right), 2)
+        draw_tree(node.right, x_right, y_right, level + 1, spacing, visited_nodes, DFS_Targets)
 
 
 def render_tree():
     global output_frame, lock,visited_nodes,bfs_state,dfs_state,DFS_Targets
     running = True
-    # messagebox.showinfo("Tutorial\n",
-    #                     "Up Button : add Number to AVL Tree\nDown Button : remove Number from AVL Tree\n\n\n"
-    #                     "after you finish build the Tree:\n\nLeft Button: press few times to see the order of BFS\n"
-    #                     "Right Button: press few times to see the order of DFS\n\n\nAfter press Left OR Right Button you can press Space to clear")
-    # input_number = ""
-    # TreeNumbers = []
-    # BFS_order = []
-    # Highest = 0
-    # DFS_order = []
-    # stack = []
-    # highlighted_numbers = []
-    # targets = []
-    # visited_nodes = []
-    # BFS_activate = False
-    # DFS_activate = False
     while running:
         screen.fill((255, 255, 255))
 
