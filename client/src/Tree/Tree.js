@@ -1,12 +1,11 @@
 import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import AVLTree from "../Components/PygameViewer";
+import AVLTree from "../Tree/AVL_Tree";
 
 function Tree({ setShow }) {
-  const location = useLocation(); // ✅ בודק לאיזה דף המשתמש נכנס
+  const location = useLocation(); 
 
   useEffect(() => {
-    // ✅ שומר נתונים רק אם המשתמש עשה רענון
     sessionStorage.setItem("treeSessionActive", "true"); 
 
     return () => {
@@ -20,7 +19,7 @@ function Tree({ setShow }) {
 
   return (
     <div>
-      <AVLTree />
+      <AVLTree/>
     </div>
   );
 }

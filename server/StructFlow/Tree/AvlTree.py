@@ -284,7 +284,7 @@ def bfs():
         "bfs_order": visited_nodes,
            "highlighted_numbers": highlighted_numbers
         })
-    
+
 
 @app.route('/dfs', methods=['GET'])
 def dfs():
@@ -310,18 +310,14 @@ def dfs():
     if DFS_Target is not None:  
         DFS_Targets.append(DFS_Target)  
 
-    print("DFS Target (Before jsonify):", DFS_Targets)  
 
     return jsonify({"dfs_order": DFS_Targets})
-
-
 
 
 @app.route('/reset', methods=['GET'])
 def reset():
     global avl_tree, Stack, DFS_order, BFS_order, DFS_Targets, bfs_state, dfs_state, highest
 
-    # אתחול מחדש של העץ
     avl_tree = AVLTree()  
     Stack = []
     DFS_order = []
@@ -329,9 +325,34 @@ def reset():
     DFS_Targets = []
     bfs_state = False
     dfs_state = False
-    highest = 0  # אתחול מחדש של highest
+    highest = 0 
 
     return jsonify({"status": "reset successful", "nodes": []}), 200
+
+@app.route('/reset_bfs', methods=['GET'])
+def reset_bfs():
+    global highest, BFS_order, bfs_state, visited_nodes
+    
+    highest = 0
+    BFS_order = []
+    bfs_state = False
+    visited_nodes = []
+    avl_tree.visited.clear()
+
+    return jsonify({"status": "reset successful", "BFS_nodes": []}), 200
+
+
+
+@app.route('/reset_dfs', methods=['GET'])
+def reset_dfs():
+    global Stack, DFS_order, dfs_state, DFS_Targets
+    Stack = []
+    DFS_order = []
+    DFS_Targets = []
+    dfs_state = False
+    avl_tree.visited.clear()
+    return jsonify({"status": "reset successful", "DFS_nodes": []}), 200
+
 
 
 
@@ -386,7 +407,7 @@ def render_tree():
             elif dfs_state and DFS_Targets:
                 draw_tree(avl_tree.root, window_width // 2, 100, visited_nodes=[],DFS_Targets = DFS_Targets)
             else:
-                draw_tree(avl_tree.root, window_width // 2, 100, visited_nodes=[],DFS_Targets = [])
+                draw_tree(avl_tree.root, window_width // 2, 100)
 
 
         frame = pygame.surfarray.array3d(screen)

@@ -8,7 +8,6 @@ import TreePage from './Tree/Tree';
 function App() {
   const [show, setShow] = useState({ main: false, tree: false,sorts: false,graph: false,structures: false});
 
-  const Title = show.AVL_Tree ? "עץ AVL" : "ברוך הבא למסך הירוק!";
 
   useEffect(() => {
   }, [show.AVL_Tree]);
@@ -149,9 +148,6 @@ function App() {
                   <Offcanvas.Body>
                   </Offcanvas.Body>
                 </Offcanvas>
-              <h1 style={{ color: 'white', textAlign: 'center' }}>
-              {Title}
-              </h1>
             </Col>
           </Row>
         </Container>
