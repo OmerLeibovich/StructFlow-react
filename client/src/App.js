@@ -3,29 +3,23 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Button, Container, Row, Col, Offcanvas } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
+import { API } from "../src/api"; 
 import TreePage from './Tree/Tree'; 
+import Graph from './Graph/Graph';
 
 function App() {
-  const [show, setShow] = useState({ main: false, tree: false,sorts: false,graph: false,structures: false});
+  const [show, setShow] = useState({ main: false, tree: false,sorts: false,Graph: false,structures: false});
 
 
   useEffect(() => {
   }, [show.AVL_Tree]);
 
   const Reset_AVL_Tree = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:5000/reset");
-      if (!response.ok) {
-        throw new Error("Failed to reset the tree");
-      }
-  
+      await API.resetTree();
       localStorage.clear(); 
       sessionStorage.removeItem("sessionActive");
   
-      setShow({ main: false, tree: false, sorts: false, graph: false, structures: false });
-    } catch (error) {
-      console.error("Error resetting tree:", error);
-    }
+      setShow({ main: false, tree: false, sorts: false,Graph: false, structures: false });
   };
   
 
@@ -35,7 +29,7 @@ function App() {
 
   const handleToggle = (menu, state) => setShow(prev => ({ ...prev, [menu]: state }));
   const handleTogglePage = (page, state) => {
-    setShow({ AVL_Tree: false, main: false, tree: false, sorts: false,graph: false,structures: false });
+    setShow({ AVL_Tree: false, main: false, tree: false, sorts: false,Graph: false,structures: false });
     setShow(prev => ({ ...prev, [page]: state }));
   };
 
@@ -72,10 +66,11 @@ function App() {
                         Sorts
                       </Button>
 
-                      <Button className="manudrawerSubButtons" onClick={() => handleToggle('graph', true)}>
-                        Graph
-                      </Button>
-
+                      <Link to="/graph" className="Sub-button">
+                        <Button className="manudrawerSubButtons" onClick={() => handleTogglePage('Graph', true)}>
+                          Graph
+                        </Button>
+                      </Link>
                       <Button className="manudrawerSubButtons" onClick={() => handleToggle('structures', true)}>
                         Structures
                       </Button>
@@ -84,6 +79,7 @@ function App() {
                       <Button
                         className="manudrawerSubButtons"
                         onClick={async () => {
+                          setShow({ main: false, tree: false, sorts: false,Graph: false, structures: false }); 
                           await Reset_AVL_Tree(); 
                         }}
                       >
@@ -124,18 +120,6 @@ function App() {
                   <Offcanvas.Body>
                   </Offcanvas.Body>
                 </Offcanvas>
-                 {/* graph Drawer */}
-              <Offcanvas
-                  show={show.graph}
-                  onHide={() => handleToggle('graph', false)}
-                  placement="end"
-                >
-                  <Offcanvas.Header closeButton>
-                    <Offcanvas.Title className="title-center">Graph</Offcanvas.Title>
-                  </Offcanvas.Header>
-                  <Offcanvas.Body>
-                  </Offcanvas.Body>
-                </Offcanvas>
                  {/*structures Drawer */}
               <Offcanvas
                   show={show.structures}
@@ -153,6 +137,7 @@ function App() {
         </Container>
         <Routes>
         <Route path="/tree" element={<TreePage setShow={setShow} />} />
+        <Route path="/graph" element={<Graph  setShow = {setShow}/>}/>
         </Routes>
       </div>
     </Router>

@@ -227,7 +227,7 @@ class AVLTree:
     
 avl_tree = AVLTree()
 
-@app.route('/insert', methods=['POST'])
+@app.route('/insert_AVL', methods=['POST'])
 def insert():
     global dfs_state,bfs_state
     if not dfs_state and not bfs_state:
@@ -239,7 +239,7 @@ def insert():
     else:
         return jsonify({"error": "Cannot insert while BFS Or DFS is active"}), 400
 
-@app.route('/delete', methods=['POST'])
+@app.route('/delete_AVL', methods=['POST'])
 def delete():
     global dfs_state,bfs_state
     if not dfs_state and not bfs_state:
@@ -314,7 +314,7 @@ def dfs():
     return jsonify({"dfs_order": DFS_Targets})
 
 
-@app.route('/reset', methods=['GET'])
+@app.route('/reset_AVL', methods=['GET'])
 def reset():
     global avl_tree, Stack, DFS_order, BFS_order, DFS_Targets, bfs_state, dfs_state, highest
 
@@ -396,19 +396,18 @@ def draw_tree(node, x, y, level=0, spacing=150, visited_nodes=None, DFS_Targets=
 
 
 def render_tree():
-    global output_frame, lock,visited_nodes,bfs_state,dfs_state,DFS_Targets
+    global output_frame, lock, visited_nodes, bfs_state, dfs_state, DFS_Targets
     running = True
     while running:
         screen.fill((255, 255, 255))
 
         if avl_tree.root:
             if bfs_state and visited_nodes: 
-                draw_tree(avl_tree.root, window_width // 2, 100, visited_nodes=visited_nodes,DFS_Targets = [])
+                draw_tree(avl_tree.root, window_width // 2, 100, visited_nodes=visited_nodes, DFS_Targets=[])
             elif dfs_state and DFS_Targets:
-                draw_tree(avl_tree.root, window_width // 2, 100, visited_nodes=[],DFS_Targets = DFS_Targets)
+                draw_tree(avl_tree.root, window_width // 2, 100, visited_nodes=[], DFS_Targets=DFS_Targets)
             else:
                 draw_tree(avl_tree.root, window_width // 2, 100)
-
 
         frame = pygame.surfarray.array3d(screen)
         frame = np.rot90(frame)
@@ -417,7 +416,10 @@ def render_tree():
 
         with lock:
             output_frame = frame.copy()
-        clock.tick(30)
+        
+        pygame.time.wait(50)  
+        clock.tick(20)  
+
 
 @app.route('/video_feed_AVL_Tree')
 def video_feed():
