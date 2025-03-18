@@ -11,8 +11,9 @@ from StructFlow.Tree.BFS_Search import BFS_Search
 from StructFlow.Tree.DFS_Search import DFS_Search
 
 
-app = Flask(__name__)
-CORS(app)
+app_tree = Flask(__name__)
+CORS(app_tree)
+
 
 # אתחול Pygame
 pygame.init()
@@ -227,7 +228,7 @@ class AVLTree:
     
 avl_tree = AVLTree()
 
-@app.route('/insert_AVL', methods=['POST'])
+@app_tree.route('/insert_AVL', methods=['POST'])
 def insert():
     global dfs_state,bfs_state
     if not dfs_state and not bfs_state:
@@ -239,7 +240,7 @@ def insert():
     else:
         return jsonify({"error": "Cannot insert while BFS Or DFS is active"}), 400
 
-@app.route('/delete_AVL', methods=['POST'])
+@app_tree.route('/delete_AVL', methods=['POST'])
 def delete():
     global dfs_state,bfs_state
     if not dfs_state and not bfs_state:
@@ -251,12 +252,12 @@ def delete():
     else:
         return jsonify({"error": "Cannot delete while BFS Or DFS is active"}), 400
 
-@app.route('/get_tree', methods=['GET'])
+@app_tree.route('/get_tree', methods=['GET'])
 def get_tree():
     return jsonify({"nodes": avl_tree.nodes})
 
 
-@app.route('/bfs', methods=['GET'])
+@app_tree.route('/bfs', methods=['GET'])
 def bfs():
     global highest, BFS_order,bfs_state,visited_nodes,dfs_state
 
@@ -286,7 +287,7 @@ def bfs():
         })
 
 
-@app.route('/dfs', methods=['GET'])
+@app_tree.route('/dfs', methods=['GET'])
 def dfs():
     global Stack, DFS_order, dfs_state, DFS_Targets,bfs_state
 
@@ -314,7 +315,7 @@ def dfs():
     return jsonify({"dfs_order": DFS_Targets})
 
 
-@app.route('/reset_AVL', methods=['GET'])
+@app_tree.route('/reset_AVL', methods=['GET'])
 def reset():
     global avl_tree, Stack, DFS_order, BFS_order, DFS_Targets, bfs_state, dfs_state, highest
 
@@ -329,7 +330,7 @@ def reset():
 
     return jsonify({"status": "reset successful", "nodes": []}), 200
 
-@app.route('/reset_bfs', methods=['GET'])
+@app_tree.route('/reset_bfs', methods=['GET'])
 def reset_bfs():
     global highest, BFS_order, bfs_state, visited_nodes
     
@@ -343,7 +344,7 @@ def reset_bfs():
 
 
 
-@app.route('/reset_dfs', methods=['GET'])
+@app_tree.route('/reset_dfs', methods=['GET'])
 def reset_dfs():
     global Stack, DFS_order, dfs_state, DFS_Targets
     Stack = []
@@ -421,8 +422,8 @@ def render_tree():
         clock.tick(20)  
 
 
-@app.route('/video_feed_AVL_Tree')
-def video_feed():
+@app_tree.route('/video_feed_AVL_Tree')
+def video_feed_AVL_Tree():
     def generate():
         global output_frame, lock
         while True:
@@ -436,5 +437,7 @@ def video_feed():
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     return Response(generate(), mimetype="multipart/x-mixed-replace; boundary=frame")
+
+
 
 
