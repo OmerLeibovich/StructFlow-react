@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Button, Container, Row, Col, Offcanvas } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
-import { API } from "../src/api"; 
+import { SetApplication,TREE_API } from "../src/api"; 
 import TreePage from './Tree/Tree'; 
 import Graph from './Graph/Graph';
 
@@ -13,7 +13,7 @@ function App() {
 
 
   const Reset_AVL_Tree = async () => {
-    await API.resetTree();
+    await  TREE_API.resetTree();
     localStorage.clear();
     sessionStorage.removeItem("sessionActive");
     setShow({ main: false, tree: false, sorts: false, Graph: false, structures: false });
@@ -29,6 +29,9 @@ function App() {
   return (
     <Router>
       <div className="background">
+      <header className="header">
+        !צריך רק אחד שיאמין בך
+      </header>
         <Container fluid>
           <Row className="full-height-row">
             <Col>
@@ -62,7 +65,7 @@ function App() {
                   <Link to="/graph" className="Sub-button">
                     <Button className="manudrawerSubButtons"  onClick={async () => {
                         handleTogglePage('Graph', true);
-                        API.SetApplication("graph");
+                        SetApplication("graph");
                         await Reset_AVL_Tree();
                       }}
                     >
@@ -102,7 +105,7 @@ function App() {
                   <Link to="/tree" className="Sub-button">
                     <Button className="manudrawerSubButtons" onClick={() => {
                         handleTogglePage('AVL_Tree', true);
-                        API.SetApplication("tree");
+                        SetApplication("tree");
                     }}>
                       AVL Tree
                     </Button>

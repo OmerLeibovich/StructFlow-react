@@ -187,3 +187,14 @@
   }
 }
 
+.header {
+  color: black; /* צבע טקסט לבן */
+  text-align: center; /* מרכז את הטקסט */
+  font-family: 'Arial', sans-serif; /* גופן נאה וקריא */
+  padding: 20px; /* ריווח פנימי */
+  font-size: 2.5em; /* גודל טקסט גדול */
+  transition: all 0.3s ease; /* אנימציה חלקה לשינוי צבע */
+}
+
+
+
