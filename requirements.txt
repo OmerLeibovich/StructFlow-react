@@ -1,0 +1,10 @@
+pygame
+opencv-python
+numpy
+flask
+flask-cors
+tk
+react
+react-dom
+react-router-dom
+bootstrap
