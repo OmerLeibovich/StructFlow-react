@@ -48,7 +48,9 @@ async function sendRequestGRAPH(endpoint, method = "GET", body = null) {
 
 export const GRAPH_API = {
   getVideoStreamGraph: () => `${config_GRAPH.apiUrl}/video_feed_Graph?t=${Date.now()}`,
-  getMouseClick: (x, y) => sendRequestGRAPH("/mouse_click", "POST", { x, y }),
+  getLeftMouseClick: (x, y) => sendRequestGRAPH("/left_mouse_click", "POST", { x, y }),
+  getRightMouseClick: (phase, points) => sendRequestGRAPH("/right_mouse_click", "POST", { phase, points }),
+  getLinesDistance:() => sendRequestGRAPH('/random_numbers_tolines'),
 };
 
 export const TREE_API = {

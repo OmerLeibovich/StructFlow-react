@@ -2,55 +2,70 @@ import React, { useState, useEffect } from "react";
 import { GRAPH_API } from "../api";
 
 const Graph = () => {
-  const [videoSrcGraph, setVideoSrcGraph] = useState(GRAPH_API.getVideoStreamGraph());
+  const [videoSrcGraph, setVideoSrcGraph] = useState(
+    GRAPH_API.getVideoStreamGraph()
+  );
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isRightDragging, setIsRightDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+  const [distances,setDistances] = useState([]);
+  // state לאיסוף נקודות במהלך גרירת לחצן ימני
 
   useEffect(() => {
     const interval = setInterval(() => {
       setVideoSrcGraph(GRAPH_API.getVideoStreamGraph());
     }, 200);
-
     return () => clearInterval(interval);
   }, []);
 
-  const handleMouseClick = async (e) => {
-    // Get the image element from the event target
+ 
+  useEffect(() => {
+    const handleWindowMouseUp = (e) => {
+      if (e.button === 2) {
+        setIsRightDragging(false);
+        console.log("Right click drag ended (window) at:", e.clientX, e.clientY);
+        setDragStart(null);
+      }
+    };
+
+    window.addEventListener("mouseup", handleWindowMouseUp);
+    return () =>
+      window.removeEventListener("mouseup", handleWindowMouseUp);
+  }, [isRightDragging]);
+
+  const getRelativeCoordinates = (e) => {
     const image = e.target;
-    
-    // Get the image dimensions (width and height)
     const imgWidth = image.offsetWidth;
     const imgHeight = image.offsetHeight;
-  
-    // Get the image's position relative to the viewport
     const imageRect = image.getBoundingClientRect();
-  
-    // Calculate the click coordinates relative to the image
     const x = e.clientX - imageRect.left;
     const y = e.clientY - imageRect.top;
-  
-    // Define the white area's dimensions and position (assuming it is centered in the image)
-    const whiteAreaWidth = 700;  // White area width
-    const whiteAreaHeight = 650; // White area height
-    const whiteAreaX = (imgWidth - whiteAreaWidth) / 2; // X coordinate of the white area's top-left corner
-    const whiteAreaY = (imgHeight - whiteAreaHeight) / 2; // Y coordinate of the white area's top-left corner
-  
-    // Check if the click is within the white area boundaries
+    const whiteAreaWidth = 700;
+    const whiteAreaHeight = 650;
+    const whiteAreaX = (imgWidth - whiteAreaWidth) / 2;
+    const whiteAreaY = (imgHeight - whiteAreaHeight) / 2;
+
     if (
       x >= whiteAreaX &&
       x < whiteAreaX + whiteAreaWidth &&
       y >= whiteAreaY &&
       y <= whiteAreaY + whiteAreaHeight
     ) {
-      // Calculate relative coordinates (between 0 and 1) within the white area
-      const xRelative = (x - whiteAreaX) / whiteAreaWidth;
-      const yRelative = (y - whiteAreaY) / whiteAreaHeight;
-  
+      return {
+        xRelative: (x - whiteAreaX) / whiteAreaWidth,
+        yRelative: (y - whiteAreaY) / whiteAreaHeight,
+      };
+    }
+  };
+
+  // טיפול בלחיצה שמאלית
+  const handleMouseClick = async (e) => {
+    if (e.button === 0) {
+      console.log("Left click");
+      const { xRelative, yRelative } = getRelativeCoordinates(e);
       try {
-        // Send the relative coordinates to your API
-        const data = await GRAPH_API.getMouseClick(xRelative, yRelative);
-  
+        const data = await GRAPH_API.getLeftMouseClick(xRelative, yRelative);
         if (data.x !== undefined && data.y !== undefined) {
-          // Update the mouse position state with the response
           setMousePosition({ x: data.x, y: data.y });
         } else {
           console.error("Error: Missing x or y in response");
@@ -62,23 +77,112 @@ const Graph = () => {
       console.log("Click is outside the white area.");
     }
   };
-  
-  
-  
-  
+
+  // פונקציה לשיגור נתוני לחצן ימני לשרת לפי השלב ("start" או "end")
+  const sendRightMouseClick = async (phase, points) => {
+    try {
+      const data = await GRAPH_API.getRightMouseClick(phase, points);
+      console.log(`Server response for ${phase}:`, data);
+    } catch (error) {
+      console.error("Error sending right mouse click", error);
+    }
+  };
+
+  // טיפול בלחיצה ימנית (תחילת גרירה)
+  const handleRightMouseDown = (e) => {
+    if (e.button === 2) {
+      e.preventDefault();
+      const coords = getRelativeCoordinates(e);
+      if (coords) {
+        const absX = Math.round(coords.xRelative * 700);
+        const absY = Math.round(coords.yRelative * 650);
+        console.log(`Right click start absolute coordinates: x=${absX}, y=${absY}`);
+        // שליחת הנתונים כשלב התחלה
+        sendRightMouseClick("start", [{ x: absX, y: absY }]);
+        // אתחול מערך הנקודות עם נקודת התחלה
+      } else {
+        console.log("Right click start: Click was outside the white area.");
+      }
+      setIsRightDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+      console.log("Right click drag started", e.clientX, e.clientY);
+    }
+  };
+
+  // טיפול בתנועת העכבר בעת גרירה
+  const handleMouseMove = (e) => {
+    if (isRightDragging && dragStart) {
+      const coords = getRelativeCoordinates(e);
+      if (coords) {
+        const absX = Math.round(coords.xRelative * 700);
+        const absY = Math.round(coords.yRelative * 650);
+        console.log("Dragging at absolute coordinates:", absX, absY);
+      }
+    }
+  };
+
+  const handleMouseUp = (e) => {
+    if (e.button === 2 && isRightDragging) {
+      e.preventDefault();
+      const coords = getRelativeCoordinates(e);
+      if (coords) {
+        const absX = Math.round(coords.xRelative * 700);
+        const absY = Math.round(coords.yRelative * 650);
+        console.log(`Right click end absolute coordinates: x=${absX}, y=${absY}`);
+        sendRightMouseClick("end", { x: absX, y: absY });
+      }
+      setIsRightDragging(false);
+      setDragStart(null);
+    }
+  };
+
+  const Random_distances = async () => {
+    const result = await GRAPH_API.getLinesDistance();
+    if (!result.error) {
+      setDistances(result.LinesDis)
+    }
+    else {
+      alert(result.error);
+    }
+
+
+  };
+
+  // מניעת תפריט הקשר
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+  };
 
   return (
     <div style={{ textAlign: "center", marginTop: "20px" }}>
-      <div style={{ marginTop: "20px" }} onClick={handleMouseClick}>
+       <button onClick={Random_distances}>Random</button>
+       <h3>distances: {distances.join(", ")}</h3>
+      <div
+        style={{ marginTop: "20px" }}
+        onMouseDown={(e) => {
+          if (e.button === 0) {
+            handleMouseClick(e);
+          } else if (e.button === 2) {
+            handleRightMouseDown(e);
+          }
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onContextMenu={handleContextMenu}
+      >
         <img
           src={videoSrcGraph}
           alt="Graph"
-          style={{ width: "700px", height: "650px", border: "2px solid black" }}
+          style={{
+            width: "700px",
+            height: "650px",
+            border: "2px solid black",
+          }}
         />
       </div>
       <p>
-          Mouse Position: {`x: ${mousePosition.x}, y: ${mousePosition.y}`}
-        </p>
+        Mouse Position: {`x: ${mousePosition.x}, y: ${mousePosition.y}`}
+      </p>
     </div>
   );
 };

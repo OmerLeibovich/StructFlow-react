@@ -5,6 +5,7 @@ import threading
 from flask import Flask, Response, request, jsonify
 from flask_cors import CORS
 import heapq
+import random
 
 # אתחול Flask
 app_graph = Flask(__name__)
@@ -22,6 +23,9 @@ lock = threading.Lock()
 circles = []  # משתנה שיאחסן את העיגולים שנוצרו
 CIRCLE_RADIUS = 20  # רדיוס העיגול
 MIN_DISTANCE = CIRCLE_RADIUS * 2  # המרחק המינימלי בין עיגולים
+current_line_start = None   # לשמירת נקודת התחלה של הקו (כמו מילון {'x': ..., 'y': ...})
+temp_lines = []   
+linesDistance = []
 
 # מחלקת גרף
 class Graph:
@@ -57,6 +61,8 @@ class Graph:
                     heapq.heappush(priority_queue, (distance, neighbor))
 
         return shortest_paths, previous_nodes
+    
+
 
 graph = Graph()
 
@@ -85,8 +91,8 @@ def find_shortest_path():
     shortest_paths, previous_nodes = graph.dijkstra(start_node)
     return jsonify({"shortest_paths": shortest_paths, "previous_nodes": previous_nodes})
 
-@app_graph.route('/mouse_click', methods=['POST'])
-def mouse_click():
+@app_graph.route('/left_mouse_click', methods=['POST'])
+def left_mouse_click():
     data = request.get_json()
     
     # Get the relative coordinates (floats between 0 and 1)
@@ -111,13 +117,83 @@ def mouse_click():
         return jsonify({"x": abs_x, "y": abs_y})
     else:
         return jsonify({"error": "x and y values are required"}), 400
+    
+
+@app_graph.route('/right_mouse_click', methods=["POST"])
+def right_mouse_click():
+    global current_line_start, temp_lines
+    data = request.get_json()
+    phase = data.get("phase")
+    points = data.get("points")
+    
+    if not points:
+        return jsonify({"error": "No points provided"}), 400
+    
+    if isinstance(points, dict):
+        points = [points]
+
+    if phase == "start":
+        print("Received starting points:", points)
+        current_line_start = points[0]
+        return jsonify({"status": "Starting points received"}), 200
+    elif phase == "end":
+        print("Received ending points:", points)
+        end_point = points[0]
+        if current_line_start is not None:
+            if point_in_circle(current_line_start) and point_in_circle(end_point):
+                circle_start = get_circle_center(current_line_start)
+                circle_end = get_circle_center(end_point)
+                exists = any(
+                    (line == (circle_start, circle_end) or line == (circle_end, circle_start))
+                    for line in temp_lines
+                )
+                if not exists:
+                    temp_lines.append((circle_start, circle_end))
+                    print("Line added:", circle_start, circle_end)
+                else:
+                    print("Line not added: line already exists between these circles.")
+            else:
+                print("Line not added: starting or ending point is not within a circle.")
+            current_line_start = None
+        return jsonify({"status": "Ending points received"}), 200
+    else:
+        return jsonify({"error": "Invalid phase value"}), 400
+    
+@app_graph.route('/random_numbers_tolines', methods=["GET"])
+def random_numbers_tolines():
+    global linesDistance, temp_lines
+    linesDistance = []
+    for i in range(len(temp_lines)):
+        random_num = random.randint(1, 100) 
+        temp_lines[i] = temp_lines[i][:2] + (random_num,)
+        linesDistance.append(random_num)
+    linesDistance_sorted = sorted(linesDistance)
+    return jsonify({"LinesDis": linesDistance_sorted})
+
+def point_in_circle(point):
+    x = int(point["x"])
+    y = int(point["y"])
+    for cx, cy in circles:
+        distance = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+        if distance <= CIRCLE_RADIUS:
+            return True
+    return False
+
+def get_circle_center(point):
+    x = int(point["x"])
+    y = int(point["y"])
+    for cx, cy in circles:
+        distance = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+        if distance <= CIRCLE_RADIUS:
+            return (cx, cy)
+    return (x, y)
 
 def render_graph():
-    global output_frame, lock
+    global linesDistance, output_frame, lock, temp_lines
     while True:
         screen.fill((255, 255, 255))
 
-        # ציור הצמתים והקווים
+
         for node1, node2, weight in graph.edges:
             pygame.draw.line(screen, (0, 0, 0), graph.nodes[node1], graph.nodes[node2], 2)
             mid_x = (graph.nodes[node1][0] + graph.nodes[node2][0]) // 2
@@ -126,16 +202,33 @@ def render_graph():
             text = font.render(str(weight), True, (0, 0, 0))
             screen.blit(text, (mid_x, mid_y))
 
-        # ציור צמתים
+
         for node, pos in graph.nodes.items():
             pygame.draw.circle(screen, (0, 0, 255), pos, 20)
             pygame.draw.circle(screen, (0, 0, 0), pos, 21, 2)
 
-        # ציור כל העיגולים שנשמרו
+     
         for (x, y) in circles:
             pygame.draw.circle(screen, (0, 0, 255), (x, y), CIRCLE_RADIUS)
 
-        # יצירת תמונת וידאו
+        
+        for line in temp_lines:
+            pygame.draw.line(screen, (255, 0, 0), line[0], line[1], 3)
+
+        if linesDistance:
+            for line in temp_lines:
+                if len(line) >= 3:
+                    start, end, weight = line
+                    mid_x = (start[0] + end[0]) // 2
+                    mid_y = (start[1] + end[1]) // 2
+                    font = pygame.font.Font(None, 36)
+                    text = font.render(str(weight), True, (0, 0, 0))
+                    text_rect = text.get_rect(center=(mid_x, mid_y))
+                    pygame.draw.rect(screen, (255, 255, 0), text_rect.inflate(10, 10))
+                    screen.blit(text, text_rect)
+
+
+ 
         frame = pygame.surfarray.array3d(screen)
         frame = np.rot90(frame)
         frame = cv2.flip(frame, 0)
