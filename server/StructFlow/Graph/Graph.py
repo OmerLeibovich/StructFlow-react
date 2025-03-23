@@ -26,6 +26,7 @@ MIN_DISTANCE = CIRCLE_RADIUS * 2  # המרחק המינימלי בין עיגו�
 current_line_start = None   # לשמירת נקודת התחלה של הקו (כמו מילון {'x': ..., 'y': ...})
 temp_lines = []   
 linesDistance = []
+count = 1
 
 # מחלקת גרף
 class Graph:
@@ -66,33 +67,34 @@ class Graph:
 
 graph = Graph()
 
-@app_graph.route('/add_node', methods=['POST'])
-def add_node():
-    data = request.get_json()
-    name, x, y = data["name"], data["x"], data["y"]
-    graph.add_node(name, (x, y))
-    return jsonify({"status": "Node added", "node": name})
+# @app_graph.route('/add_node', methods=['POST'])
+# def add_node():
+#     data = request.get_json()
+#     name, x, y = data["name"], data["x"], data["y"]
+#     graph.add_node(name, (x, y))
+#     return jsonify({"status": "Node added", "node": name})
 
-@app_graph.route('/add_edge', methods=['POST'])
-def add_edge():
-    data = request.get_json()
-    node1, node2, weight = data["node1"], data["node2"], data["weight"]
-    graph.add_edge(node1, node2, weight)
-    return jsonify({"status": "Edge added", "edge": (node1, node2, weight)})
+# @app_graph.route('/add_edge', methods=['POST'])
+# def add_edge():
+#     data = request.get_json()
+#     node1, node2, weight = data["node1"], data["node2"], data["weight"]
+#     graph.add_edge(node1, node2, weight)
+#     return jsonify({"status": "Edge added", "edge": (node1, node2, weight)})
 
-@app_graph.route('/get_graph', methods=['GET'])
-def get_graph():
-    return jsonify({"nodes": graph.nodes, "edges": graph.edges})
+# @app_graph.route('/get_graph', methods=['GET'])
+# def get_graph():
+#     return jsonify({"nodes": graph.nodes, "edges": graph.edges})
 
-@app_graph.route('/dijkstra', methods=['POST'])
-def find_shortest_path():
-    data = request.get_json()
-    start_node = data["start"]
-    shortest_paths, previous_nodes = graph.dijkstra(start_node)
-    return jsonify({"shortest_paths": shortest_paths, "previous_nodes": previous_nodes})
+# @app_graph.route('/dijkstra', methods=['POST'])
+# def find_shortest_path():
+#     data = request.get_json()
+#     start_node = data["start"]
+#     shortest_paths, previous_nodes = graph.dijkstra(start_node)
+#     return jsonify({"shortest_paths": shortest_paths, "previous_nodes": previous_nodes})
 
 @app_graph.route('/left_mouse_click', methods=['POST'])
 def left_mouse_click():
+    global count
     data = request.get_json()
     
     # Get the relative coordinates (floats between 0 and 1)
@@ -107,13 +109,18 @@ def left_mouse_click():
         print(f"Converted absolute coordinates: x={abs_x}, y={abs_y}")
         
         # Check if the click is too close to any existing circle
-        for (cx, cy) in circles:
-            distance = ((abs_x - cx) ** 2 + (abs_y - cy) ** 2) ** 0.5  # Calculate distance between click and circle center
-            if distance < MIN_DISTANCE:
-                return jsonify({"message": "Click is too close to an existing circle, no new circle added."}), 200
+        for circle in circles:
+                cx, cy = circle[:2]
+                distance = ((abs_x - cx) ** 2 + (abs_y - cy) ** 2) ** 0.5
+                if distance < MIN_DISTANCE:
+                    return jsonify({"message": "Click is too close to an existing circle, no new circle added."}), 200
+
 
         # Add the new circle to the list of circles if no overlap
-        circles.append((abs_x, abs_y))
+        circles.append((abs_x, abs_y) + (count,))
+
+        count+=1
+        print (circles[-1])
         return jsonify({"x": abs_x, "y": abs_y})
     else:
         return jsonify({"error": "x and y values are required"}), 400
@@ -173,7 +180,8 @@ def random_numbers_tolines():
 def point_in_circle(point):
     x = int(point["x"])
     y = int(point["y"])
-    for cx, cy in circles:
+    for circle in circles:
+        cx, cy = circle[:2]
         distance = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
         if distance <= CIRCLE_RADIUS:
             return True
@@ -182,11 +190,13 @@ def point_in_circle(point):
 def get_circle_center(point):
     x = int(point["x"])
     y = int(point["y"])
-    for cx, cy in circles:
+    for circle in circles:
+        cx, cy = circle[:2]
         distance = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
         if distance <= CIRCLE_RADIUS:
             return (cx, cy)
     return (x, y)
+
 
 def render_graph():
     global linesDistance, output_frame, lock, temp_lines
@@ -194,22 +204,29 @@ def render_graph():
         screen.fill((255, 255, 255))
 
 
-        for node1, node2, weight in graph.edges:
-            pygame.draw.line(screen, (0, 0, 0), graph.nodes[node1], graph.nodes[node2], 2)
-            mid_x = (graph.nodes[node1][0] + graph.nodes[node2][0]) // 2
-            mid_y = (graph.nodes[node1][1] + graph.nodes[node2][1]) // 2
-            font = pygame.font.Font(None, 25)
-            text = font.render(str(weight), True, (0, 0, 0))
-            screen.blit(text, (mid_x, mid_y))
+        # for node1, node2, weight in graph.edges:
+        #     pygame.draw.line(screen, (0, 0, 0), graph.nodes[node1], graph.nodes[node2], 2)
+        #     mid_x = (graph.nodes[node1][0] + graph.nodes[node2][0]) // 2
+        #     mid_y = (graph.nodes[node1][1] + graph.nodes[node2][1]) // 2
+        #     font = pygame.font.Font(None, 25)
+        #     text = font.render(str(weight), True, (0, 0, 0))
+        #     screen.blit(text, (mid_x, mid_y))
 
 
-        for node, pos in graph.nodes.items():
-            pygame.draw.circle(screen, (0, 0, 255), pos, 20)
-            pygame.draw.circle(screen, (0, 0, 0), pos, 21, 2)
+        # for node, pos in graph.nodes.items():
+        #     pygame.draw.circle(screen, (0, 0, 255), pos, 20)
+        #     pygame.draw.circle(screen, (0, 0, 0), pos, 21, 2)
 
      
-        for (x, y) in circles:
-            pygame.draw.circle(screen, (0, 0, 255), (x, y), CIRCLE_RADIUS)
+        for circle in circles:
+            x, y, num = circle  # קבלת המיקום והמספר
+            pygame.draw.circle(screen,(173, 216, 230), (x, y), CIRCLE_RADIUS)
+            font = pygame.font.Font(None, 36)
+            text = font.render(str(num), True, (0, 0, 0))  # טקסט בשחור
+            text_rect = text.get_rect(center=(x, y))
+            screen.blit(text, text_rect)
+
+
 
         
         for line in temp_lines:
