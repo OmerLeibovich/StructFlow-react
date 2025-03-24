@@ -147,16 +147,20 @@ const Graph = () => {
 
 
   };
-
   const Dijkstra_Start = async () => {
     const numValue = parseInt(inputValue, 10);
     try {
       const response = await GRAPH_API.getDijkstraAlgo(numValue);
-      console.log("Dijkstra result:", response.data);
-  
-      const shortestPaths = response.data.Shortest_paths;
-      const previousNodes = response.data.Previous_nodes;
-  
+      console.log("Full response:", response);
+      if (!response) {
+        console.error("No response data received", response);
+        return;
+      }
+      
+      
+      const shortestPaths = response.Shortest_paths;
+      const previousNodes = response.Previous_nodes;
+      
       console.log("Shortest Paths:", shortestPaths);
       console.log("Previous Nodes:", previousNodes);
     } catch (error) {
@@ -164,8 +168,12 @@ const Graph = () => {
     }
   };
   
+
+  const resetGraph = async () => {
+      await GRAPH_API.resetGraph();
+  }
   
-  // מניעת תפריט הקשר
+  
   const handleContextMenu = (e) => {
     e.preventDefault();
   };
@@ -207,6 +215,13 @@ const Graph = () => {
       <p>
         Mouse Position: {`x: ${mousePosition.x}, y: ${mousePosition.y}`}
       </p>
+             
+      <div style={{ width: "600px", margin: "20px auto" }}>
+            <button onClick = {resetGraph} style={{ width: "100%", height: "50px", fontSize: "18px" }}>
+            reset
+        </button>
+            </div>
+
     </div>
   );
 };

@@ -74,30 +74,6 @@ class Graph:
 
 graph = Graph()
 
-# @app_graph.route('/add_node', methods=['POST'])
-# def add_node():
-#     data = request.get_json()
-#     name, x, y = data["name"], data["x"], data["y"]
-#     graph.add_node(name, (x, y))
-#     return jsonify({"status": "Node added", "node": name})
-
-# @app_graph.route('/add_edge', methods=['POST'])
-# def add_edge():
-#     data = request.get_json()
-#     node1, node2, weight = data["node1"], data["node2"], data["weight"]
-#     graph.add_edge(node1, node2, weight)
-#     return jsonify({"status": "Edge added", "edge": (node1, node2, weight)})
-
-# @app_graph.route('/get_graph', methods=['GET'])
-# def get_graph():
-#     return jsonify({"nodes": graph.nodes, "edges": graph.edges})
-
-# @app_graph.route('/dijkstra', methods=['POST'])
-# def find_shortest_path():
-#     data = request.get_json()
-#     start_node = data["start"]
-#     shortest_paths, previous_nodes = graph.dijkstra(start_node)
-#     return jsonify({"shortest_paths": shortest_paths, "previous_nodes": previous_nodes})
 
 @app_graph.route('/left_mouse_click', methods=['POST'])
 def left_mouse_click():
@@ -141,36 +117,39 @@ def right_mouse_click():
     
     if not points:
         return jsonify({"error": "No points provided"}), 400
-    
+
     if isinstance(points, dict):
         points = [points]
 
     if phase == "start":
-        print("Received starting points:", points)
         current_line_start = points[0]
         return jsonify({"status": "Starting points received"}), 200
     elif phase == "end":
-        print("Received ending points:", points)
         end_point = points[0]
         if current_line_start is not None:
             if point_in_circle(current_line_start) and point_in_circle(end_point):
                 circle_start = get_circle_center(current_line_start)
                 circle_end = get_circle_center(end_point)
-                exists = any(
-                    (line == (circle_start, circle_end) or line == (circle_end, circle_start))
-                    for line in temp_lines
-                )
-                if not exists:
-                    graph.edges.append((circle_start, circle_end))
-                    print("Line added:", circle_start, circle_end)
+                if circle_start != circle_end:
+                    exists = any(
+                        (edge[:2] == (circle_start, circle_end) or edge[:2] == (circle_end, circle_start))
+                        for edge in graph.edges
+                    )
+                    if not exists:
+                        graph.edges.append((circle_start, circle_end))
+                        print("Line added:", circle_start, circle_end)
+                    else:
+                        print("Line not added: line already exists between these circles.")
                 else:
-                    print("Line not added: line already exists between these circles.")
+                    print("Line not added: cannot connect a circle to itself.")
             else:
                 print("Line not added: starting or ending point is not within a circle.")
             current_line_start = None
         return jsonify({"status": "Ending points received"}), 200
     else:
         return jsonify({"error": "Invalid phase value"}), 400
+
+
     
 @app_graph.route('/random_numbers_tolines', methods=["GET"])
 def random_numbers_tolines():
@@ -229,6 +208,18 @@ def Dijkstra_algo():
         "Shortest_paths": shortest_paths_str,
         "Previous_nodes": previous_nodes_str,
     })
+
+@app_graph.route("/reset" , methods = ["GET"])
+def reset():
+    global current_line_start,linesDistance,count,dijkstra_path_edges
+    graph.nodes = []
+    graph.edges = []
+    current_line_start = None   
+    linesDistance = []
+    count = 1
+    dijkstra_path_edges = []
+    
+    return jsonify({"message": "All was reset"}), 200
 
 
     
