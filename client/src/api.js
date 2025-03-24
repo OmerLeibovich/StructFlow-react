@@ -51,6 +51,8 @@ export const GRAPH_API = {
   getLeftMouseClick: (x, y) => sendRequestGRAPH("/left_mouse_click", "POST", { x, y }),
   getRightMouseClick: (phase, points) => sendRequestGRAPH("/right_mouse_click", "POST", { phase, points }),
   getLinesDistance:() => sendRequestGRAPH('/random_numbers_tolines'),
+  getDijkstraAlgo: (key) => sendRequestGRAPH('/Dijkstra_algo', "POST", { key }),
+
 };
 
 export const TREE_API = {

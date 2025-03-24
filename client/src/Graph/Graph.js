@@ -9,7 +9,8 @@ const Graph = () => {
   const [isRightDragging, setIsRightDragging] = useState(false);
   const [dragStart, setDragStart] = useState(null);
   const [distances,setDistances] = useState([]);
-  // state לאיסוף נקודות במהלך גרירת לחצן ימני
+  const [inputValue, setInputValue] = useState("");
+
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -88,7 +89,6 @@ const Graph = () => {
     }
   };
 
-  // טיפול בלחיצה ימנית (תחילת גרירה)
   const handleRightMouseDown = (e) => {
     if (e.button === 2) {
       e.preventDefault();
@@ -148,6 +148,23 @@ const Graph = () => {
 
   };
 
+  const Dijkstra_Start = async () => {
+    const numValue = parseInt(inputValue, 10);
+    try {
+      const response = await GRAPH_API.getDijkstraAlgo(numValue);
+      console.log("Dijkstra result:", response.data);
+  
+      const shortestPaths = response.data.Shortest_paths;
+      const previousNodes = response.data.Previous_nodes;
+  
+      console.log("Shortest Paths:", shortestPaths);
+      console.log("Previous Nodes:", previousNodes);
+    } catch (error) {
+      console.error("Error calling Dijkstra API:", error);
+    }
+  };
+  
+  
   // מניעת תפריט הקשר
   const handleContextMenu = (e) => {
     e.preventDefault();
@@ -155,6 +172,13 @@ const Graph = () => {
 
   return (
     <div style={{ textAlign: "center", marginTop: "20px" }}>
+    <input
+        type="text"
+        placeholder="Insert number"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value.replace(/\D/g, ""))}
+      />
+      <button onClick={Dijkstra_Start}>Pick a node</button>
        <button onClick={Random_distances}>Random</button>
        <h3>distances: {distances.join(", ")}</h3>
       <div

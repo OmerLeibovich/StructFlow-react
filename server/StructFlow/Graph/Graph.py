@@ -7,31 +7,30 @@ from flask_cors import CORS
 import heapq
 import random
 
-# אתחול Flask
+
 app_graph = Flask(__name__)
 CORS(app_graph)
 
-# אתחול Pygame
+
 pygame.init()
 WIDTH, HEIGHT = 700, 650
 screen = pygame.Surface((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
-# משתנים גלובליים
+
 output_frame = None
 lock = threading.Lock()
-circles = []  # משתנה שיאחסן את העיגולים שנוצרו
-CIRCLE_RADIUS = 20  # רדיוס העיגול
-MIN_DISTANCE = CIRCLE_RADIUS * 2  # המרחק המינימלי בין עיגולים
-current_line_start = None   # לשמירת נקודת התחלה של הקו (כמו מילון {'x': ..., 'y': ...})
-temp_lines = []   
+CIRCLE_RADIUS = 20 
+MIN_DISTANCE = CIRCLE_RADIUS * 2  
+current_line_start = None   
 linesDistance = []
 count = 1
+dijkstra_path_edges = [] 
 
-# מחלקת גרף
+
 class Graph:
     def __init__(self):
-        self.nodes = {}
+        self.nodes = []
         self.edges = []
 
     def add_node(self, name, pos):
@@ -41,27 +40,35 @@ class Graph:
         if node1 in self.nodes and node2 in self.nodes:
             self.edges.append((node1, node2, weight))
 
-    def dijkstra(self, start):
-        shortest_paths = {node: float('inf') for node in self.nodes}
-        shortest_paths[start] = 0
-        priority_queue = [(0, start)]
-        previous_nodes = {}
+    def dijkstra_all(self,start, nodes, edges):
 
-        while priority_queue:
-            current_distance, current_node = heapq.heappop(priority_queue)
-
-            if current_distance > shortest_paths[current_node]:
+        graph_adj = {node: [] for node in nodes}
+        for edge in edges:
+            n1, n2, weight = edge
+            graph_adj[n1].append((n2, weight, edge))
+            graph_adj[n2].append((n1, weight, edge))
+        
+        import heapq
+        dist = {node: float('inf') for node in nodes}
+        prev = {node: None for node in nodes}
+        edge_used = {node: None for node in nodes}
+        dist[start] = 0
+        pq = [(0, start)]
+        
+        while pq:
+            d, u = heapq.heappop(pq)
+            if d > dist[u]:
                 continue
+            for v, weight, used_edge in graph_adj[u]:
+                alt = d + weight
+                if alt < dist[v]:
+                    dist[v] = alt
+                    prev[v] = u
+                    edge_used[v] = used_edge
+                    heapq.heappush(pq, (alt, v))
+        
+        return dist, prev, edge_used
 
-            for neighbor, weight in [(n2, w) for n1, n2, w in self.edges if n1 == current_node] + \
-                                    [(n1, w) for n1, n2, w in self.edges if n2 == current_node]:
-                distance = current_distance + weight
-                if distance < shortest_paths[neighbor]:
-                    shortest_paths[neighbor] = distance
-                    previous_nodes[neighbor] = current_node
-                    heapq.heappush(priority_queue, (distance, neighbor))
-
-        return shortest_paths, previous_nodes
     
 
 
@@ -109,7 +116,7 @@ def left_mouse_click():
         print(f"Converted absolute coordinates: x={abs_x}, y={abs_y}")
         
         # Check if the click is too close to any existing circle
-        for circle in circles:
+        for circle in graph.nodes:
                 cx, cy = circle[:2]
                 distance = ((abs_x - cx) ** 2 + (abs_y - cy) ** 2) ** 0.5
                 if distance < MIN_DISTANCE:
@@ -117,10 +124,9 @@ def left_mouse_click():
 
 
         # Add the new circle to the list of circles if no overlap
-        circles.append((abs_x, abs_y) + (count,))
+        graph.nodes.append((abs_x, abs_y) + (count,))
 
         count+=1
-        print (circles[-1])
         return jsonify({"x": abs_x, "y": abs_y})
     else:
         return jsonify({"error": "x and y values are required"}), 400
@@ -128,7 +134,7 @@ def left_mouse_click():
 
 @app_graph.route('/right_mouse_click', methods=["POST"])
 def right_mouse_click():
-    global current_line_start, temp_lines
+    global current_line_start
     data = request.get_json()
     phase = data.get("phase")
     points = data.get("points")
@@ -155,7 +161,7 @@ def right_mouse_click():
                     for line in temp_lines
                 )
                 if not exists:
-                    temp_lines.append((circle_start, circle_end))
+                    graph.edges.append((circle_start, circle_end))
                     print("Line added:", circle_start, circle_end)
                 else:
                     print("Line not added: line already exists between these circles.")
@@ -168,19 +174,70 @@ def right_mouse_click():
     
 @app_graph.route('/random_numbers_tolines', methods=["GET"])
 def random_numbers_tolines():
-    global linesDistance, temp_lines
+    global linesDistance,dijkstra_path_edges
+    dijkstra_path_edges = []
     linesDistance = []
-    for i in range(len(temp_lines)):
+    for i in range(len(graph.edges)):
         random_num = random.randint(1, 100) 
-        temp_lines[i] = temp_lines[i][:2] + (random_num,)
+        graph.edges[i] = graph.edges[i][:2] + (random_num,)
         linesDistance.append(random_num)
     linesDistance_sorted = sorted(linesDistance)
     return jsonify({"LinesDis": linesDistance_sorted})
 
+@app_graph.route('/Dijkstra_algo', methods=["POST"])
+def Dijkstra_algo():
+    data = request.get_json()
+    print("Received JSON:", data)
+
+    start_key = int(data["key"])
+
+
+
+    start_circle = None
+    for circle in graph.nodes:
+        if circle[-1] == start_key:
+            start_circle = circle
+            break
+    if start_circle is None:
+        print("1")
+        return jsonify({"error": "Invalid start key"}), 400
+
+
+    start_node = None
+    for node in graph.nodes:
+    
+        print(node)
+        if node[0] == start_circle[0] and node[1] == start_circle[1]:
+            start_node = node
+            break
+
+    if not start_node:
+        print("2")
+        return jsonify({"error": "Start node not found in graph"}), 400
+
+    start_node = (start_circle[0], start_circle[1])
+    nodes_for_dijkstra = [(circle[0], circle[1]) for circle in graph.nodes]
+    shortest_paths, previous_nodes, edge_used = graph.dijkstra_all(start_node, nodes_for_dijkstra, graph.edges)
+
+
+    global dijkstra_path_edges
+    dijkstra_path_edges = list({edge for edge in edge_used.values() if edge is not None})
+    shortest_paths_str = {str(k): v for k, v in shortest_paths.items()}
+    previous_nodes_str = {str(k): str(v) if v is not None else None for k, v in previous_nodes.items()}
+
+    return jsonify({
+        "Shortest_paths": shortest_paths_str,
+        "Previous_nodes": previous_nodes_str,
+    })
+
+
+    
+
+
 def point_in_circle(point):
     x = int(point["x"])
     y = int(point["y"])
-    for circle in circles:
+    for circle in graph.nodes:
         cx, cy = circle[:2]
         distance = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
         if distance <= CIRCLE_RADIUS:
@@ -190,50 +247,43 @@ def point_in_circle(point):
 def get_circle_center(point):
     x = int(point["x"])
     y = int(point["y"])
-    for circle in circles:
+    for circle in graph.nodes:
         cx, cy = circle[:2]
         distance = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
         if distance <= CIRCLE_RADIUS:
             return (cx, cy)
     return (x, y)
 
-
 def render_graph():
-    global linesDistance, output_frame, lock, temp_lines
+    global linesDistance, output_frame, lock, dijkstra_path_edges
     while True:
         screen.fill((255, 255, 255))
 
 
-        # for node1, node2, weight in graph.edges:
-        #     pygame.draw.line(screen, (0, 0, 0), graph.nodes[node1], graph.nodes[node2], 2)
-        #     mid_x = (graph.nodes[node1][0] + graph.nodes[node2][0]) // 2
-        #     mid_y = (graph.nodes[node1][1] + graph.nodes[node2][1]) // 2
-        #     font = pygame.font.Font(None, 25)
-        #     text = font.render(str(weight), True, (0, 0, 0))
-        #     screen.blit(text, (mid_x, mid_y))
+        for edge in graph.edges:
+            edge_to_check = edge if len(edge) == 2 else edge[:2]
+            if dijkstra_path_edges and any(
+                ((e[0] == edge_to_check[0] and e[1] == edge_to_check[1]) or
+                 (e[0] == edge_to_check[1] and e[1] == edge_to_check[0]))
+                for e in dijkstra_path_edges
+            ):
+                edge_color = (0, 255, 0)  
+            else:
+                edge_color = (0, 0, 0)
+            pygame.draw.line(screen, edge_color, edge[0], edge[1], 6)
 
 
-        # for node, pos in graph.nodes.items():
-        #     pygame.draw.circle(screen, (0, 0, 255), pos, 20)
-        #     pygame.draw.circle(screen, (0, 0, 0), pos, 21, 2)
-
-     
-        for circle in circles:
-            x, y, num = circle  # קבלת המיקום והמספר
-            pygame.draw.circle(screen,(173, 216, 230), (x, y), CIRCLE_RADIUS)
+        for circle in graph.nodes:
+            x, y, num = circle
+            pygame.draw.circle(screen, (173, 216, 230), (x, y), CIRCLE_RADIUS)
             font = pygame.font.Font(None, 36)
-            text = font.render(str(num), True, (0, 0, 0))  # טקסט בשחור
+            text = font.render(str(num), True, (0, 0, 0))
             text_rect = text.get_rect(center=(x, y))
             screen.blit(text, text_rect)
 
 
-
-        
-        for line in temp_lines:
-            pygame.draw.line(screen, (255, 0, 0), line[0], line[1], 3)
-
         if linesDistance:
-            for line in temp_lines:
+            for line in graph.edges:
                 if len(line) >= 3:
                     start, end, weight = line
                     mid_x = (start[0] + end[0]) // 2
@@ -244,15 +294,17 @@ def render_graph():
                     pygame.draw.rect(screen, (255, 255, 0), text_rect.inflate(10, 10))
                     screen.blit(text, text_rect)
 
-
- 
         frame = pygame.surfarray.array3d(screen)
         frame = np.rot90(frame)
         frame = cv2.flip(frame, 0)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
+        
         with lock:
             output_frame = frame.copy()
+
+        clock.tick(30)
+
+
 
 @app_graph.route('/video_feed_Graph')
 def video_feed_Graph():
