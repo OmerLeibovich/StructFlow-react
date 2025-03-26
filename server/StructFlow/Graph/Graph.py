@@ -26,6 +26,7 @@ current_line_start = None
 linesDistance = []
 count = 1
 dijkstra_path_edges = [] 
+rendering_active = True
 
 
 class Graph:
@@ -257,7 +258,7 @@ def get_circle_center(point):
 
 def render_graph():
     global linesDistance, output_frame, lock, dijkstra_path_edges
-    while True:
+    while rendering_active:
         screen.fill((255, 255, 255))
 
 
@@ -278,7 +279,7 @@ def render_graph():
             x, y, num = circle
             pygame.draw.circle(screen, (173, 216, 230), (x, y), CIRCLE_RADIUS)
             font = pygame.font.Font(None, 36)
-            text = font.render(str(num), True, (0, 0, 0))
+            text = font.render(str(num), True, (255, 0 , 0))
             text_rect = text.get_rect(center=(x, y))
             screen.blit(text, text_rect)
 
@@ -304,6 +305,9 @@ def render_graph():
             output_frame = frame.copy()
 
         clock.tick(30)
+
+         
+
 
 
 

@@ -1,9 +1,9 @@
 import { useState} from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link} from 'react-router-dom';
 import { Button, Container, Row, Col, Offcanvas } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
-import { SetApplication,TREE_API } from "../src/api"; 
+import { SetApplication,TREE_API,GRAPH_API } from "../src/api"; 
 import TreePage from './Tree/Tree'; 
 import Graph from './Graph/Graph';
 
@@ -12,8 +12,9 @@ function App() {
 
 
 
-  const Reset_AVL_Tree = async () => {
+  const Reset = async () => {
     await  TREE_API.resetTree();
+    await GRAPH_API.resetGraph();
     localStorage.clear();
     sessionStorage.removeItem("sessionActive");
     setShow({ main: false, tree: false, sorts: false, Graph: false, structures: false });
@@ -65,7 +66,7 @@ function App() {
                     <Button className="manudrawerSubButtons"  onClick={async () => {
                         handleTogglePage('Graph', true);
                         SetApplication("graph");
-                        await Reset_AVL_Tree();
+                        await Reset();
                       }}
                     >
                       Graph
@@ -81,7 +82,7 @@ function App() {
                       className="manudrawerSubButtons"
                       onClick={async () => {
                         setShow({ main: false, tree: false, sorts: false, Graph: false, structures: false });
-                        await Reset_AVL_Tree();
+                        await Reset()
                       }}
                     >
                       HomePage
@@ -102,9 +103,10 @@ function App() {
                 </Offcanvas.Header>
                 <Offcanvas.Body>
                   <Link to="/tree" className="Sub-button">
-                    <Button className="manudrawerSubButtons" onClick={() => {
+                    <Button className="manudrawerSubButtons" onClick={async () => {
                         handleTogglePage('AVL_Tree', true);
                         SetApplication("tree");
+                        await Reset()
                     }}>
                       AVL Tree
                     </Button>
