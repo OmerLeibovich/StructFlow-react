@@ -198,6 +198,15 @@ def Dijkstra_algo():
     nodes_for_dijkstra = [(circle[0], circle[1]) for circle in graph.nodes]
     shortest_paths, previous_nodes, edge_used = graph.dijkstra_all(start_node, nodes_for_dijkstra, graph.edges)
 
+    key_to_distance = {}
+
+    for circle in graph.nodes:
+        node_coords = (circle[0], circle[1])
+        key = circle[-1]
+        distance = shortest_paths.get(node_coords)
+        if distance is not None:
+            key_to_distance[str(key)] = distance
+
 
     global dijkstra_path_edges
     dijkstra_path_edges = list({edge for edge in edge_used.values() if edge is not None})
@@ -207,6 +216,7 @@ def Dijkstra_algo():
     return jsonify({
         "Shortest_paths": shortest_paths_str,
         "Previous_nodes": previous_nodes_str,
+        "Key_Distances": key_to_distance,
     })
 
 @app_graph.route("/reset" , methods = ["GET"])
