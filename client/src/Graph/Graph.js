@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { GRAPH_API } from "../api";
+import { Button, Modal } from "react-bootstrap";
 
 const Graph = () => {
   const [videoSrcGraph, setVideoSrcGraph] = useState(GRAPH_API.getVideoStreamGraph());
@@ -11,6 +12,7 @@ const Graph = () => {
   const [shortPaths, setshortPaths] = useState([]);
   const [data, setData] = useState({});
   const [showTable, setShowTable] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -244,13 +246,32 @@ const Graph = () => {
               border: "2px solid black",
             }}
           />
+
         </div>
+        <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
+          Explanation
+        </button>
       </div>
       <div style={{ width: "600px", margin: "20px auto" }}>
         <button onClick={resetGraph} style={{ width: "100%", height: "50px", fontSize: "18px" }}>
           reset
         </button>
       </div>
+      <Modal show={showExplanation} onHide={() => setShowExplanation(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>AVL Tree Tutorial</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>*Left click mouse: choose place to put node.</p>
+          <p>*Right click mouse: hold to connect 2 nodes with line</p>
+          <p>*Random Button: give random distances to lines.</p>
+          <p>*Pick a node Button: give all distance from any node to the choosen in input line.</p>
+          <p>*Reset: reset all the screen.</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowExplanation(false)}>Close</Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

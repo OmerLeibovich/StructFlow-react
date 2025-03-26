@@ -205,10 +205,10 @@ const AVLTree = () => {
       
         
       <div style={{ width: "600px", margin: "20px auto" }}>
-            <Button onClick = {handleReset} style={{ width: "100%", height: "50px", fontSize: "18px" }}
+            <button onClick = {handleReset} style={{ width: "100%", height: "50px", fontSize: "18px" }}
             >
         {resetLabel}
-        </Button>
+        </button>
             </div>
 
       <Modal show={showExplanation} onHide={() => setShowExplanation(false)}>
@@ -216,11 +216,11 @@ const AVLTree = () => {
           <Modal.Title>AVL Tree Tutorial</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>Insert Button: Add a number to the AVL Tree.</p>
-          <p>Delete Button: Remove a number from the AVL Tree.</p>
-          <p>BFS Button: Press multiple times to see BFS order.</p>
-          <p>DFS Button: Press multiple times to see DFS order.</p>
-          <p>Reset to current state.</p>
+          <p>*Insert Button: Add a number to the AVL Tree.</p>
+          <p>*Delete Button: Remove a number from the AVL Tree.</p>
+          <p>*BFS Button: Press multiple times to see BFS order.</p>
+          <p>*DFS Button: Press multiple times to see DFS order.</p>
+          <p>*Reset: reset to current state.</p>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowExplanation(false)}>Close</Button>

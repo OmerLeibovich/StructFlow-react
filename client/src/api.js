@@ -53,7 +53,6 @@ export const GRAPH_API = {
   getLinesDistance:() => sendRequestGRAPH('/random_numbers_tolines'),
   getDijkstraAlgo: (key) => sendRequestGRAPH('/Dijkstra_algo', "POST", { key }),
   resetGraph:() => sendRequestGRAPH('/reset'),
-  initGraph:() => sendRequestGRAPH('/shutdown'),
 
 };
 
