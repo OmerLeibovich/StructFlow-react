@@ -1,16 +1,15 @@
 import { useState} from 'react';
-import { BrowserRouter as Router, Routes, Route, Link} from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Button, Container, Row, Col, Offcanvas } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import { SetApplication,TREE_API,GRAPH_API } from "../src/api"; 
-import TreePage from './Tree/Tree'; 
+import TreePage from './Tree/AVL_Tree'; 
 import Graph from './Graph/Graph';
 
 function App() {
   const [show, setShow] = useState({ main: false, tree: false, sorts: false, Graph: false, structures: false });
-
-
+  const location = useLocation();
 
   const Reset = async () => {
     await  TREE_API.resetTree();
@@ -28,7 +27,6 @@ function App() {
   };
 
   return (
-    <Router>
       <div className="background">
       <header className="header">
         !צריך רק אחד שיאמין בך
@@ -63,12 +61,18 @@ function App() {
                   </Button>
 
                   <Link to="/graph" className="Sub-button">
-                    <Button className="manudrawerSubButtons"  onClick={async () => {
+                    <Button className="manudrawerSubButtons"
+                    
+                    onClick={async () => {
+                      if (location.pathname === '/graph') {
+                        handleToggle('main', false);
+                      } else {
                         handleTogglePage('Graph', true);
                         SetApplication("graph");
                         await Reset();
-                      }}
-                    >
+                      }
+                    }}
+                  >
                       Graph
                     </Button>
                   </Link>
@@ -104,10 +108,15 @@ function App() {
                 <Offcanvas.Body>
                   <Link to="/tree" className="Sub-button">
                     <Button className="manudrawerSubButtons" onClick={async () => {
+                      if (location.pathname === '/tree') {
+                        handleToggle('main', false);
+                      } else {
                         handleTogglePage('AVL_Tree', true);
                         SetApplication("tree");
-                        await Reset()
-                    }}>
+                        await Reset();
+                      }
+                    }}
+                  >
                       AVL Tree
                     </Button>
                   </Link>
@@ -144,7 +153,6 @@ function App() {
           <Route path="/graph" element={<Graph setShow={setShow} />} />
         </Routes>
       </div>
-    </Router>
   );
 }
 

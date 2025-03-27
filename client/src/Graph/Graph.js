@@ -1,60 +1,75 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { GRAPH_API } from "../api";
 import { Button, Modal } from "react-bootstrap";
 
 const Graph = () => {
+  
   const [videoSrcGraph, setVideoSrcGraph] = useState(GRAPH_API.getVideoStreamGraph());
+  const [inputValue, setInputValue] = useState("");
   const [isRightDragging, setIsRightDragging] = useState(false);
   const [dragStart, setDragStart] = useState(null);
-  const [distances, setDistances] = useState([]);
-  const [inputValue, setInputValue] = useState("");
-  const [numValue, setnumValue] = useState(null);
-  const [shortPaths, setshortPaths] = useState([]);
-  const [data, setData] = useState({});
-  const [showTable, setShowTable] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [distances, setDistances] = useState(() => {
+    const saved = localStorage.getItem("distances");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [numValue, setNumValue] = useState(() => {
+    const saved = localStorage.getItem("numValue");
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [shortPaths, setShortPaths] = useState(() => {
+    const saved = localStorage.getItem("shortPaths");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [data, setData] = useState(() => {
+    const saved = localStorage.getItem("data");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const [showTable, setShowTable] = useState(() => {
+    const saved = localStorage.getItem("showTable");
+    return saved ? JSON.parse(saved) : false;
+  });
+
 
   useEffect(() => {
-    return () => {
-      fetch(GRAPH_API.initGraph, { method: 'GET' })
-        .then(response => response.json())
-        .then(data => console.log(data.message))
-        .catch(error => console.error('Error shutting down the server:', error));
-    };
+    const savedDistances = localStorage.getItem("distances");
+    const savedNumValue = localStorage.getItem("numValue");
+    const savedShortPaths = localStorage.getItem("shortPaths");
+    const savedData = localStorage.getItem("data");
+    const savedShowTable = localStorage.getItem("showTable");
+  
+    if (savedDistances) setDistances(JSON.parse(savedDistances));
+    if (savedNumValue) setNumValue(JSON.parse(savedNumValue));
+    if (savedShortPaths) setShortPaths(JSON.parse(savedShortPaths));
+    if (savedData) setData(JSON.parse(savedData));
+    if (savedShowTable) setShowTable(JSON.parse(savedShowTable));
   }, []);
+  
+
 
   useEffect(() => {
     const interval = setInterval(() => {
       setVideoSrcGraph(GRAPH_API.getVideoStreamGraph());
     }, 200);
-
-    return () => clearInterval(interval); 
+    return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const isNewSession = !sessionStorage.getItem("graphSessionActive");
-    if (isNewSession) {
-      localStorage.clear();
-      sessionStorage.setItem("graphSessionActive", "true");
+ 
+  const fetchGraphData = useCallback(async () => {
+    const graphData = await GRAPH_API.getgraph();
+    if (graphData && graphData.distanses) {
+      setDistances(graphData.distanses);
     }
   }, []);
 
   useEffect(() => {
-    sessionStorage.setItem("distances", JSON.stringify(distances));
-  }, [distances]);
+    fetchGraphData();
+  }, [fetchGraphData]);
 
-  useEffect(() => {
-    sessionStorage.setItem("numValue", JSON.stringify(numValue));
-  }, [numValue]);
-
-  useEffect(() => {
-    sessionStorage.setItem("shortPaths", JSON.stringify(shortPaths));
-  }, [shortPaths]);
-
-  useEffect(() => {
-    sessionStorage.setItem("data", JSON.stringify(data));
-  }, [data]);
-
+  
   const getRelativeCoordinates = (e) => {
     const image = e.target;
     const imgWidth = image.offsetWidth;
@@ -140,17 +155,21 @@ const Graph = () => {
     }
   };
 
+  const handleContextMenu = (e) => e.preventDefault();
+
   const Random_distances = async () => {
     setInputValue("");
     const result = await GRAPH_API.getLinesDistance();
-    if (!result.error) setDistances(result.LinesDis);
-    else alert(result.error);
+    if (!result.error) {
+      setDistances(result.LinesDis);
+    } else {
+      alert(result.error);
+    }
   };
 
   const Dijkstra_Start = async () => {
     if (!inputValue) return alert("Please enter a number!");
     const parsedValue = parseInt(inputValue, 10);
-    setnumValue(parsedValue);
     setInputValue("");
 
     try {
@@ -160,37 +179,50 @@ const Graph = () => {
       const shortestPaths = response.Shortest_paths;
       const distanceKey = response.Key_Distances;
 
-      const weightsArray = Object.values(shortestPaths).filter(value => value !== 0);
-      setshortPaths(weightsArray);
+      if (!distanceKey || !distanceKey.hasOwnProperty(parsedValue)) {
+        alert("Error: this number not in the graph!");
+        return;
+      }
 
+      setNumValue(parsedValue);
+
+      const weightsArray = Object.values(shortestPaths).filter(value => value !== 0);
+      setShortPaths(weightsArray);
+
+  
       const filteredData = Object.fromEntries(
         Object.entries(distanceKey).filter(([node]) => node !== String(parsedValue))
       );
       setData(filteredData);
+
       setShowTable(true);
+
     } catch (error) {
       console.error("Error calling Dijkstra API:", error);
     }
   };
 
+
   const resetGraph = async () => {
     setDistances([]);
     setInputValue("");
-    setnumValue(null);
-    setshortPaths([]);
+    setNumValue(null);
+    setShortPaths([]);
     setData({});
     setShowTable(false);
 
-    sessionStorage.removeItem("distances");
-    sessionStorage.removeItem("numValue");
-    sessionStorage.removeItem("shortPaths");
-    sessionStorage.removeItem("data");
-    sessionStorage.removeItem("graphSessionActive");
+  
+    localStorage.removeItem("distances");
+    localStorage.removeItem("numValue");
+    localStorage.removeItem("shortPaths");
+    localStorage.removeItem("data");
+    localStorage.removeItem("showTable");
+
+
+
 
     await GRAPH_API.resetGraph();
   };
-
-  const handleContextMenu = (e) => e.preventDefault();
 
   return (
     <div style={{ textAlign: "center" }}>
@@ -202,7 +234,11 @@ const Graph = () => {
       />
       <button onClick={Dijkstra_Start}>Pick a node</button>
       <button onClick={Random_distances}>Random</button>
+
+
       <h3>distances: {distances.join(", ")}</h3>
+
+
       <h3>Short_Path from {numValue}: {shortPaths.join(", ")}</h3>
 
       <div style={{ display: "flex", justifyContent: "center" }}>
@@ -246,26 +282,29 @@ const Graph = () => {
               border: "2px solid black",
             }}
           />
-
         </div>
         <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
           Explanation
         </button>
+
       </div>
+
       <div style={{ width: "600px", margin: "20px auto" }}>
         <button onClick={resetGraph} style={{ width: "100%", height: "50px", fontSize: "18px" }}>
           reset
         </button>
       </div>
+
+
       <Modal show={showExplanation} onHide={() => setShowExplanation(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>AVL Tree Tutorial</Modal.Title>
+          <Modal.Title>Graph Tutorial</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p>*Left click mouse: choose place to put node.</p>
-          <p>*Right click mouse: hold to connect 2 nodes with line</p>
+          <p>*Right click mouse: hold to connect 2 nodes with line.</p>
           <p>*Random Button: give random distances to lines.</p>
-          <p>*Pick a node Button: give all distance from any node to the choosen in input line.</p>
+          <p>*Pick a node Button: get all distance from any node to the chosen node.</p>
           <p>*Reset: reset all the screen.</p>
         </Modal.Body>
         <Modal.Footer>

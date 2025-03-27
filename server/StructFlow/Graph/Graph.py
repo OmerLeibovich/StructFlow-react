@@ -164,6 +164,13 @@ def random_numbers_tolines():
     linesDistance_sorted = sorted(linesDistance)
     return jsonify({"LinesDis": linesDistance_sorted})
 
+
+@app_graph.route('/get_graph',methods = ["GET"])
+def get_graph():
+    global linesDistance
+    return jsonify ({"distanses":sorted(linesDistance)})
+
+
 @app_graph.route('/Dijkstra_algo', methods=["POST"])
 def Dijkstra_algo():
     data = request.get_json()
@@ -222,13 +229,14 @@ def Dijkstra_algo():
 
 @app_graph.route("/reset" , methods = ["GET"])
 def reset():
-    global current_line_start,linesDistance,count,dijkstra_path_edges
+    global current_line_start,linesDistance,count,dijkstra_path_edges,key_to_distance
     graph.nodes = []
     graph.edges = []
     current_line_start = None   
     linesDistance = []
     count = 1
     dijkstra_path_edges = []
+    key_to_distance=[]
     
     return jsonify({"message": "All was reset"}), 200
 

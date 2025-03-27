@@ -10,7 +10,9 @@ const AVLTree = () => {
   const [bfsOrder, setBfsOrder] = useState([]);
   const [dfsOrder, setDfsOrder] = useState([]);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [resetLabel, setResetLabel] = useState("Reset");
+  const [resetLabel, setResetLabel] = useState(() => {
+    return localStorage.getItem("resetLabel") || "Reset";
+  });
   const [videoSrcAVL, setVideoSrcAVL] = useState( TREE_API.getVideoStreamAVL());
 
   const fetchTreeData = useCallback(async () => {
@@ -21,6 +23,8 @@ const AVLTree = () => {
       );
     }
   }, []);
+
+
   useEffect(() => {
     fetchTreeData();
   }, [fetchTreeData]);
@@ -35,27 +39,21 @@ const AVLTree = () => {
     return () => clearInterval(interval); 
   }, []);
 
-  useEffect(() => {
-    const isNewSession = !sessionStorage.getItem("sessionActive");
-
-    if (isNewSession) {
-      localStorage.clear(); 
-      sessionStorage.setItem("sessionActive", "true"); 
+   useEffect(() => {
+    if (!sessionStorage.getItem("sessionActive")) {
+      sessionStorage.setItem("sessionActive", "true");
     }
-
     const savedNodes = localStorage.getItem("treeNodes");
     const savedBFS = localStorage.getItem("bfsOrder");
     const savedDFS = localStorage.getItem("dfsOrder");
-    const savedResetLabel = localStorage.getItem("resetLabel");
 
     if (savedNodes) setNodes(JSON.parse(savedNodes));
     if (savedBFS) setBfsOrder(JSON.parse(savedBFS));
     if (savedDFS) setDfsOrder(JSON.parse(savedDFS));
-    if (savedResetLabel) setResetLabel(savedResetLabel);
+    
 
     fetchTreeData(); 
-}, [fetchTreeData]);
-
+  }, [fetchTreeData]);
 
   
   useEffect(() => {
@@ -86,6 +84,7 @@ const AVLTree = () => {
     if (!inputValue) return alert("Error: Please enter a number!");
 
     const numValue = parseInt(inputValue, 10);
+    setInputValue("");
     if (isNaN(numValue) || numValue < 0 || numValue > 999) {
       return alert("Error: Number must be between 0 and 999!");
     }
@@ -93,22 +92,22 @@ const AVLTree = () => {
 
     const result = await TREE_API.insertNode(numValue);
     if (!result.error) {
-      setInputValue("");
+      
       fetchTreeData();
     } else {
       alert(result.error);
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async () => {;
     if (!inputValue) return alert("Error: Please enter a number!");
     
     const numValue = parseInt(inputValue, 10);
+    setInputValue("");
     if (!nodes.includes(numValue)) return alert("Error: Number does not exist!");
 
     const result = await  TREE_API.deleteNode(numValue);
     if (!result.error) {
-      setInputValue("");
       fetchTreeData();
     } else {
       alert(result.error);
@@ -117,6 +116,7 @@ const AVLTree = () => {
 
   const handleBFS = async () => {
     const result = await  TREE_API.startBFS();
+    setInputValue("");
     if (!result.error) {
       localStorage.setItem("bfsOrder", JSON.stringify(result.bfs_order)); 
       localStorage.setItem("resetLabel", "BFS_Reset"); 
@@ -129,6 +129,7 @@ const AVLTree = () => {
 
   const handleDFS = async () => {
     const result = await  TREE_API.startDFS();
+    setInputValue("");
     if (!result.error) {
       localStorage.setItem("dfsOrder", JSON.stringify(result.dfs_order)); 
       localStorage.setItem("resetLabel", "DFS_Reset"); 
@@ -139,30 +140,34 @@ const AVLTree = () => {
     }
   };
   const handleReset = async () => {
+    setInputValue("");
+  
     if (resetLabel === "BFS_Reset") {
-      await  TREE_API.resetBFS();
+      await TREE_API.resetBFS();
       setBfsOrder([]);
-      localStorage.removeItem("bfsOrder"); 
-      localStorage.setItem("resetLabel", "Reset");  
+      localStorage.removeItem("bfsOrder");
+  
+  
     } else if (resetLabel === "DFS_Reset") {
-      await  TREE_API.resetDFS();
+      await TREE_API.resetDFS();
       setDfsOrder([]);
-      localStorage.removeItem("dfsOrder");  
-      localStorage.setItem("resetLabel", "Reset"); 
+      localStorage.removeItem("dfsOrder");
+  
     } else {
-      await  TREE_API.resetTree();
+      await TREE_API.resetTree();
       setNodes([]);
       setBfsOrder([]);
       setDfsOrder([]);
       localStorage.removeItem("treeNodes");
       localStorage.removeItem("bfsOrder");
       localStorage.removeItem("dfsOrder");
+      localStorage.clear();
+
     }
   
-    setResetLabel("Reset");
-    localStorage.removeItem("resetLabel"); 
     fetchTreeData();
   };
+  
   
 
   const formatList = (list) => {
