@@ -6,13 +6,26 @@ import { TREE_API } from "../api";
 
 const AVLTree = () => {
   const [inputValue, setInputValue] = useState("");
-  const [nodes, setNodes] = useState([]);
-  const [bfsOrder, setBfsOrder] = useState([]);
-  const [dfsOrder, setDfsOrder] = useState([]);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [resetLabel, setResetLabel] = useState(() => {
-    return localStorage.getItem("resetLabel") || "Reset";
+  const [nodes, setNodes] = useState(() => {
+    const saved = localStorage.getItem("treeNodes");
+    return saved ? JSON.parse(saved) : [];
   });
+  
+  const [bfsOrder, setBfsOrder] = useState(() => {
+    const saved = localStorage.getItem("bfsOrder");
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [dfsOrder, setDfsOrder] = useState(() => {
+    const saved = localStorage.getItem("dfsOrder");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [resetLabel, setResetLabel] = useState(() => {
+    const saved = localStorage.getItem("resetLabel");
+    return saved ? JSON.parse(saved) : "Reset";
+  });
+  
   const [videoSrcAVL, setVideoSrcAVL] = useState( TREE_API.getVideoStreamAVL());
 
   const fetchTreeData = useCallback(async () => {
@@ -25,58 +38,33 @@ const AVLTree = () => {
   }, []);
 
 
-  useEffect(() => {
-    fetchTreeData();
-  }, [fetchTreeData]);
-
 
 
   useEffect(() => {
     const interval = setInterval(() => {
       setVideoSrcAVL( TREE_API.getVideoStreamAVL());
     }, 200);
-
-    return () => clearInterval(interval); 
-  }, []);
-
-   useEffect(() => {
     if (!sessionStorage.getItem("sessionActive")) {
       sessionStorage.setItem("sessionActive", "true");
     }
-    const savedNodes = localStorage.getItem("treeNodes");
-    const savedBFS = localStorage.getItem("bfsOrder");
-    const savedDFS = localStorage.getItem("dfsOrder");
-
-    if (savedNodes) setNodes(JSON.parse(savedNodes));
-    if (savedBFS) setBfsOrder(JSON.parse(savedBFS));
-    if (savedDFS) setDfsOrder(JSON.parse(savedDFS));
-    
 
     fetchTreeData(); 
-  }, [fetchTreeData]);
+
+    return () => clearInterval(interval); 
+  },  [fetchTreeData]);
+
+
+
+
 
   
   useEffect(() => {
-    if (nodes.length > 0) {
-      localStorage.setItem("treeNodes", JSON.stringify(nodes));
-    }
-  }, [nodes]);
+    localStorage.setItem("treeNodes", JSON.stringify(nodes));
+    localStorage.setItem("bfsOrder", JSON.stringify(bfsOrder));
+    localStorage.setItem("dfsOrder", JSON.stringify(dfsOrder));
+    localStorage.setItem("resetLabel", JSON.stringify(resetLabel));
+  }, [nodes, bfsOrder, dfsOrder,resetLabel]);
   
-  useEffect(() => {
-    if (bfsOrder.length > 0) {
-      localStorage.setItem("bfsOrder", JSON.stringify(bfsOrder));
-    }
-  }, [bfsOrder]);
-  
-  useEffect(() => {
-    if (dfsOrder.length > 0) {
-      localStorage.setItem("dfsOrder", JSON.stringify(dfsOrder));
-    }
-  }, [dfsOrder]);
-  
-  useEffect(() => {
-    localStorage.setItem("resetLabel", resetLabel); 
-  }, [resetLabel]);
   
 
 
@@ -145,12 +133,14 @@ const AVLTree = () => {
     if (resetLabel === "BFS_Reset") {
       await TREE_API.resetBFS();
       setBfsOrder([]);
+      setResetLabel("Reset")
       localStorage.removeItem("bfsOrder");
   
   
     } else if (resetLabel === "DFS_Reset") {
       await TREE_API.resetDFS();
       setDfsOrder([]);
+      setResetLabel("Reset")
       localStorage.removeItem("dfsOrder");
   
     } else {

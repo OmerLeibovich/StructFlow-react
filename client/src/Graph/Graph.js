@@ -34,30 +34,6 @@ const Graph = () => {
   });
 
 
-  useEffect(() => {
-    const savedDistances = localStorage.getItem("distances");
-    const savedNumValue = localStorage.getItem("numValue");
-    const savedShortPaths = localStorage.getItem("shortPaths");
-    const savedData = localStorage.getItem("data");
-    const savedShowTable = localStorage.getItem("showTable");
-  
-    if (savedDistances) setDistances(JSON.parse(savedDistances));
-    if (savedNumValue) setNumValue(JSON.parse(savedNumValue));
-    if (savedShortPaths) setShortPaths(JSON.parse(savedShortPaths));
-    if (savedData) setData(JSON.parse(savedData));
-    if (savedShowTable) setShowTable(JSON.parse(savedShowTable));
-  }, []);
-  
-
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setVideoSrcGraph(GRAPH_API.getVideoStreamGraph());
-    }, 200);
-    return () => clearInterval(interval);
-  }, []);
-
- 
   const fetchGraphData = useCallback(async () => {
     const graphData = await GRAPH_API.getgraph();
     if (graphData && graphData.distanses) {
@@ -65,9 +41,27 @@ const Graph = () => {
     }
   }, []);
 
+
   useEffect(() => {
+
+    const interval = setInterval(() => {
+      setVideoSrcGraph(GRAPH_API.getVideoStreamGraph());
+    }, 200);
+
+
     fetchGraphData();
-  }, [fetchGraphData]);
+    return () => clearInterval(interval);
+  },  [fetchGraphData] );
+  
+
+  useEffect(() => {
+    localStorage.setItem("distances", JSON.stringify(distances));
+    localStorage.setItem("numValue", JSON.stringify(numValue));
+    localStorage.setItem("shortPaths", JSON.stringify(shortPaths));
+    localStorage.setItem("data", JSON.stringify(data));
+    localStorage.setItem("showTable", JSON.stringify(showTable));
+  }, [distances, numValue, shortPaths, data, showTable]);
+ 
 
   
   const getRelativeCoordinates = (e) => {
