@@ -1,6 +1,5 @@
 import pygame
 import cv2
-import numpy as np
 import threading
 import sys
 import random
@@ -9,28 +8,24 @@ from flask import Flask, Response, request, jsonify
 from flask_cors import CORS
 from StructFlow.Tree.BFS_Search import BFS_Search
 from StructFlow.Tree.DFS_Search import DFS_Search
+from StructFlow.Screen import *
+
 
 
 app_tree = Flask(__name__)
 CORS(app_tree)
 
 
-# אתחול Pygame
-pygame.init()
-window_width, window_height = 700, 650
-screen = pygame.Surface((window_width, window_height))
-clock = pygame.time.Clock()
 
-columns, rows = 25, 25
-box_width = window_width // columns
-box_height = window_height // rows
+pygame.init()
+clock = pygame.time.Clock()
 output_frame = None
 lock = threading.Lock()
 bfs_state=False
 dfs_state = False
 visited_nodes = []
 DFS_Targets = []
-# מבנה ה-AVL Tree
+
 class TreeNode:
     def __init__(self, key, parent=None):
         self.key = key
@@ -370,21 +365,18 @@ def draw_tree(node, x, y, level=0, spacing=150, visited_nodes=None, DFS_Targets=
                                  and node.key in visited_nodes) or (DFS_Targets is not None 
                                                                     and node.key in DFS_Targets) else (0, 0, 255)
 
-    # ציור מעגל עבור הצומת
+
     pygame.draw.circle(screen, node_color, (x, y), 20)
     pygame.draw.circle(screen, (0, 0, 0), (x, y), 21, 2)  
 
-    # ציור המפתח (key) של הצומת
-    font = pygame.font.Font(None, 36)
     text = font.render(str(node.key), True, (255, 255, 255))
     text_rect = text.get_rect(center=(x, y))
     screen.blit(text, text_rect)
 
-    next_y = y + 75  
     spacing = max(75, spacing // 1.5)  
     line_offset = 20  
 
-    # ציור הקווים והקריאה הרקורסיבית
+    
     if node.left:
         x_left = x - (700 // (2 ** (level + 2)))
         y_left = y + 100
@@ -402,7 +394,7 @@ def render_tree():
     global output_frame, lock, visited_nodes, bfs_state, dfs_state, DFS_Targets
     running = True
     while running:
-        screen.fill((255, 255, 255))
+        clear_screen()
 
         if avl_tree.root:
             if bfs_state and visited_nodes: 
@@ -412,13 +404,9 @@ def render_tree():
             else:
                 draw_tree(avl_tree.root, window_width // 2, 100)
 
-        frame = pygame.surfarray.array3d(screen)
-        frame = np.rot90(frame)
-        frame = cv2.flip(frame, 0)  
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)  
 
         with lock:
-            output_frame = frame.copy()
+            output_frame = get_frame().copy()
         
         pygame.time.wait(50)  
         clock.tick(20)  

@@ -1,11 +1,12 @@
 import pygame
 import cv2
-import numpy as np
 import threading
 from flask import Flask, Response, request, jsonify
 from flask_cors import CORS
 import heapq
 import random
+from StructFlow.Screen import *
+
 
 
 app_graph = Flask(__name__)
@@ -13,20 +14,17 @@ CORS(app_graph)
 
 
 pygame.init()
-WIDTH, HEIGHT = 700, 650
-screen = pygame.Surface((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
 
 output_frame = None
 lock = threading.Lock()
-CIRCLE_RADIUS = 20 
-MIN_DISTANCE = CIRCLE_RADIUS * 2  
 current_line_start = None   
 linesDistance = []
 count = 1
 dijkstra_path_edges = [] 
 rendering_active = True
+random_Activity = False
 
 
 class Graph:
@@ -78,35 +76,40 @@ graph = Graph()
 
 @app_graph.route('/left_mouse_click', methods=['POST'])
 def left_mouse_click():
-    global count
-    data = request.get_json()
-    
-    # Get the relative coordinates (floats between 0 and 1)
-    rel_x = data.get('x')
-    rel_y = data.get('y')
-    print("Relative coordinates received:", rel_x, rel_y)
-    
-    if rel_x is not None and rel_y is not None:
-        # Convert relative coordinates to absolute coordinates (pixels)
-        abs_x = int(float(rel_x) * 700)
-        abs_y = int(float(rel_y) * 650)
-        print(f"Converted absolute coordinates: x={abs_x}, y={abs_y}")
+    global random_Activity
+    if (not random_Activity):
+        global count
+        data = request.get_json()
         
-        # Check if the click is too close to any existing circle
-        for circle in graph.nodes:
-                cx, cy = circle[:2]
-                distance = ((abs_x - cx) ** 2 + (abs_y - cy) ** 2) ** 0.5
-                if distance < MIN_DISTANCE:
-                    return jsonify({"message": "Click is too close to an existing circle, no new circle added."}), 200
+        # Get the relative coordinates (floats between 0 and 1)
+        rel_x = data.get('x')
+        rel_y = data.get('y')
+        print("Relative coordinates received:", rel_x, rel_y)
+        
+        if rel_x is not None and rel_y is not None:
+            # Convert relative coordinates to absolute coordinates (pixels)
+            abs_x = int(float(rel_x) * 700)
+            abs_y = int(float(rel_y) * 650)
+            print(f"Converted absolute coordinates: x={abs_x}, y={abs_y}")
+            
+            # Check if the click is too close to any existing circle
+            for circle in graph.nodes:
+                    cx, cy = circle[:2]
+                    distance = ((abs_x - cx) ** 2 + (abs_y - cy) ** 2) ** 0.5
+                    if distance < MIN_DISTANCE:
+                        return jsonify({"message": "Click is too close to an existing circle, no new circle added."}), 200
 
 
-        # Add the new circle to the list of circles if no overlap
-        graph.nodes.append((abs_x, abs_y) + (count,))
+            # Add the new circle to the list of circles if no overlap
+            graph.nodes.append((abs_x, abs_y) + (count,))
 
-        count+=1
-        return jsonify({"x": abs_x, "y": abs_y})
+            count+=1
+            return jsonify({"x": abs_x, "y": abs_y})
+        else:
+            return jsonify({"error": "x and y values are required"}), 400
     else:
-        return jsonify({"error": "x and y values are required"}), 400
+        return jsonify({"error": "You can't add a new point when random is active."}), 400
+
     
 
 @app_graph.route('/right_mouse_click', methods=["POST"])
@@ -154,7 +157,8 @@ def right_mouse_click():
     
 @app_graph.route('/random_numbers_tolines', methods=["GET"])
 def random_numbers_tolines():
-    global linesDistance,dijkstra_path_edges
+    global linesDistance,dijkstra_path_edges,random_Activity
+    random_Activity = True
     dijkstra_path_edges = []
     linesDistance = []
     for i in range(len(graph.edges)):
@@ -212,13 +216,29 @@ def Dijkstra_algo():
         node_coords = (circle[0], circle[1])
         key = circle[-1]
         distance = shortest_paths.get(node_coords)
-        if distance is not None:
+        if distance is not None and distance != float('inf'):
             key_to_distance[str(key)] = distance
+
+
+
+    start_key_str = str(start_key)
+    if start_key_str not in key_to_distance:
+        key_to_distance[start_key_str] = 0
+
+
+    if len(key_to_distance) <= 1:
+        return jsonify({"error": "Selected node is isolated."}), 400
+    
+
+
 
 
     global dijkstra_path_edges
     dijkstra_path_edges = list({edge for edge in edge_used.values() if edge is not None})
-    shortest_paths_str = {str(k): v for k, v in shortest_paths.items()}
+    shortest_paths_str = {
+    str(k): (v if v != float('inf') else None)
+    for k, v in shortest_paths.items()
+}
     previous_nodes_str = {str(k): str(v) if v is not None else None for k, v in previous_nodes.items()}
 
     return jsonify({
@@ -229,14 +249,15 @@ def Dijkstra_algo():
 
 @app_graph.route("/reset" , methods = ["GET"])
 def reset():
-    global current_line_start,linesDistance,count,dijkstra_path_edges,key_to_distance
+    global current_line_start,linesDistance,count,dijkstra_path_edges,random_Activity
     graph.nodes = []
     graph.edges = []
     current_line_start = None   
     linesDistance = []
     count = 1
     dijkstra_path_edges = []
-    key_to_distance=[]
+    random_Activity = False
+
     
     return jsonify({"message": "All was reset"}), 200
 
@@ -267,7 +288,7 @@ def get_circle_center(point):
 def render_graph():
     global linesDistance, output_frame, lock, dijkstra_path_edges
     while rendering_active:
-        screen.fill((255, 255, 255))
+        clear_screen()
 
 
         for edge in graph.edges:
@@ -286,7 +307,6 @@ def render_graph():
         for circle in graph.nodes:
             x, y, num = circle
             pygame.draw.circle(screen, (173, 216, 230), (x, y), CIRCLE_RADIUS)
-            font = pygame.font.Font(None, 36)
             text = font.render(str(num), True, (255, 0 , 0))
             text_rect = text.get_rect(center=(x, y))
             screen.blit(text, text_rect)
@@ -298,19 +318,13 @@ def render_graph():
                     start, end, weight = line
                     mid_x = (start[0] + end[0]) // 2
                     mid_y = (start[1] + end[1]) // 2
-                    font = pygame.font.Font(None, 36)
                     text = font.render(str(weight), True, (0, 0, 0))
                     text_rect = text.get_rect(center=(mid_x, mid_y))
                     pygame.draw.rect(screen, (255, 255, 0), text_rect.inflate(10, 10))
                     screen.blit(text, text_rect)
-
-        frame = pygame.surfarray.array3d(screen)
-        frame = np.rot90(frame)
-        frame = cv2.flip(frame, 0)
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         
         with lock:
-            output_frame = frame.copy()
+            output_frame = get_frame().copy()
 
         clock.tick(30)
 

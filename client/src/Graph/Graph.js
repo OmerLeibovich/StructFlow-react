@@ -173,10 +173,14 @@ const Graph = () => {
       const shortestPaths = response.Shortest_paths;
       const distanceKey = response.Key_Distances;
 
-      if (!distanceKey || !distanceKey.hasOwnProperty(parsedValue)) {
-        alert("Error: this number not in the graph!");
+      if (!distanceKey || distanceKey[String(parsedValue)] === Infinity) {
+        alert("Error: this node is not connected to the graph.");
         return;
       }
+
+
+      
+      
 
       setNumValue(parsedValue);
 
@@ -246,19 +250,21 @@ const Graph = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(data).map(([node, distance]) => (
+              {Object.entries(data)
+                .filter(([_, distance]) => distance !== Infinity)
+                .map(([node, distance]) => (
                   <tr key={node}>
                     <td>{node}</td>
                     <td>{distance}</td>
                   </tr>
-                ))}
+              ))}
               </tbody>
             </table>
           </div>
         )}
 
         <div
-          style={{ position: "relative", width: "700px", height: "650px" }}
+          style={{ position: "relative", width: "700px", height: "650px", }}
           onMouseDown={(e) => {
             if (e.button === 0) handleMouseClick(e);
             else if (e.button === 2) handleRightMouseDown(e);
