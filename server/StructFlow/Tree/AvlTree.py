@@ -1,14 +1,12 @@
 import pygame
-import cv2
 import threading
-import sys
-import random
 from tkinter import  messagebox
-from flask import Flask, Response, request, jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from StructFlow.Tree.BFS_Search import BFS_Search
 from StructFlow.Tree.DFS_Search import DFS_Search
 from StructFlow.Screen import *
+from StructFlow.Video_feed import *
 
 
 
@@ -25,6 +23,7 @@ bfs_state=False
 dfs_state = False
 visited_nodes = []
 DFS_Targets = []
+
 
 class TreeNode:
     def __init__(self, key, parent=None):
@@ -288,7 +287,7 @@ def dfs():
 
 
     if bfs_state: 
-        return jsonify({"error": "Cannot run DFS while BFS is active"}), 400
+        return jsonify({"error": "Cannot run BFS while DFS is active"}), 400
     
     dfs_state = True
 
@@ -353,7 +352,13 @@ def reset_dfs():
 
 
 
+def get_output_frame():
+    global output_frame
+    if output_frame is not None:
+        return output_frame.copy()
+    return None
 
+Video_Feed = VideoFeed(get_output_frame, lock)
 
 
 
@@ -398,15 +403,16 @@ def render_tree():
 
         if avl_tree.root:
             if bfs_state and visited_nodes: 
-                draw_tree(avl_tree.root, window_width // 2, 100, visited_nodes=visited_nodes, DFS_Targets=[])
+                draw_tree(avl_tree.root, SCREEN_WIDTH // 2, 100, visited_nodes=visited_nodes, DFS_Targets=[])
             elif dfs_state and DFS_Targets:
-                draw_tree(avl_tree.root, window_width // 2, 100, visited_nodes=[], DFS_Targets=DFS_Targets)
+                draw_tree(avl_tree.root, SCREEN_WIDTH // 2, 100, visited_nodes=[], DFS_Targets=DFS_Targets)
             else:
-                draw_tree(avl_tree.root, window_width // 2, 100)
+                draw_tree(avl_tree.root, SCREEN_WIDTH // 2, 100)
 
 
         with lock:
             output_frame = get_frame().copy()
+
         
         pygame.time.wait(50)  
         clock.tick(20)  
@@ -414,20 +420,4 @@ def render_tree():
 
 @app_tree.route('/video_feed_AVL_Tree')
 def video_feed_AVL_Tree():
-    def generate():
-        global output_frame, lock
-        while True:
-            with lock:
-                if output_frame is None:
-                    continue
-                _, buffer = cv2.imencode(".jpg", output_frame)
-                frame = buffer.tobytes()
-            
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-    return Response(generate(), mimetype="multipart/x-mixed-replace; boundary=frame")
-
-
-
-
+    return Video_Feed.response()

@@ -1,11 +1,10 @@
 import pygame
-import cv2
 import threading
-from flask import Flask, Response, request, jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-import heapq
 import random
 from StructFlow.Screen import *
+from StructFlow.Video_feed import *
 
 
 
@@ -261,6 +260,13 @@ def reset():
     
     return jsonify({"message": "All was reset"}), 200
 
+def get_output_frame():
+    global output_frame
+    if output_frame is not None:
+        return output_frame.copy()
+    return None
+
+Video_Feed = VideoFeed(get_output_frame, lock)
 
     
 
@@ -326,6 +332,10 @@ def render_graph():
         with lock:
             output_frame = get_frame().copy()
 
+
+
+
+        pygame.time.wait(50) 
         clock.tick(30)
 
          
@@ -335,15 +345,6 @@ def render_graph():
 
 @app_graph.route('/video_feed_Graph')
 def video_feed_Graph():
-    def generate():
-        global output_frame, lock
-        while True:
-            with lock:
-                if output_frame is None:
-                    continue
-                _, buffer = cv2.imencode(".jpg", output_frame)
-                frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    return Video_Feed.response()
 
-    return Response(generate(), mimetype="multipart/x-mixed-replace; boundary=frame")
+    
