@@ -1,7 +1,8 @@
 import pygame
 import cv2
 import numpy as np
-
+import os
+os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 
 # Define constants
@@ -34,7 +35,7 @@ box_height = SCREEN_HEIGHT // rows
 
 
 
-screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.font.init()
 font = pygame.font.Font(None, 36)
 

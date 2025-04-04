@@ -50,7 +50,9 @@ export const TREE_API = {
 
 export const LINKED_LIST_API = {
   getVideoStreamLinkedList: () => `${config_LINKEDLIST.apiUrl}/video_feed_LinkedList?t=${Date.now()}`,
-  insertLinkedList:(key) => sendRequest(config_LINKEDLIST.apiUrl,"/insert_linked_list","POST",{ key })
+  insertLinkedList:(key) => sendRequest(config_LINKEDLIST.apiUrl,"/insert","POST",{ key }),
+  deleteLinkedList:() => sendRequest(config_LINKEDLIST.apiUrl,"/delete"),
+  searchLinkedList:(key) => sendRequest(config_LINKEDLIST.apiUrl,"/search_node",["POST"],{ key }),
 }
 
 
