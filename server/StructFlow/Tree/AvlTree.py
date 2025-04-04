@@ -7,6 +7,7 @@ from StructFlow.Tree.BFS_Search import BFS_Search
 from StructFlow.Tree.DFS_Search import DFS_Search
 from StructFlow.Screen import *
 from StructFlow.Video_feed import *
+from StructFlow.TreeNode import *
 
 
 
@@ -25,13 +26,6 @@ visited_nodes = []
 DFS_Targets = []
 
 
-class TreeNode:
-    def __init__(self, key, parent=None):
-        self.key = key
-        self.left = None
-        self.right = None
-        self.height = 1
-        self.parent = parent
 
 class AVLTree:
     def __init__(self):

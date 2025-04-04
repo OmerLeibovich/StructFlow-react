@@ -5,4 +5,8 @@ const config_GRAPH = {
   apiUrl: process.env.REACT_APP_API_URL_GRAPH || "http://localhost:5001",
 };
 
-export { config_TREE, config_GRAPH };
+const config_LINKEDLIST = {
+  apiUrl: process.env.REACT_APP_API_URL_LINKED_LIST || "http://localhost:5002",
+}
+
+export { config_TREE, config_GRAPH, config_LINKEDLIST };

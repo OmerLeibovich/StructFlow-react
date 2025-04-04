@@ -3,9 +3,10 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Button, Container, Row, Col, Offcanvas } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
-import { SetApplication,TREE_API,GRAPH_API } from "../src/api"; 
+import { SetApplication,TREE_API,GRAPH_API,LINKED_LIST_API } from "../src/api"; 
 import TreePage from './Tree/AVL_Tree'; 
 import Graph from './Graph/Graph';
+import LinkedList from './Structures/LinkedList';
 
 function App() {
   const [show, setShow] = useState({ main: false, tree: false, sorts: false, Graph: false, structures: false });
@@ -143,7 +144,22 @@ function App() {
                 <Offcanvas.Header closeButton>
                   <Offcanvas.Title className="title-center">Structures</Offcanvas.Title>
                 </Offcanvas.Header>
-                <Offcanvas.Body></Offcanvas.Body>
+                <Offcanvas.Body>
+                <Link to="/linkedlist" className="Sub-button">
+                    <Button className="manudrawerSubButtons" onClick={async () => {
+                      if (location.pathname === '/linkedlist') {
+                        handleToggle('main', false);
+                      } else {
+                        handleTogglePage('LinkedList', true);
+                        SetApplication("linkedlist");
+                        await Reset();
+                      }
+                    }}
+                  >
+                      LinkedList
+                    </Button>
+                    </Link>
+                </Offcanvas.Body>
               </Offcanvas>
             </Col>
           </Row>
@@ -151,6 +167,7 @@ function App() {
         <Routes>
           <Route path="/tree" element={<TreePage setShow={setShow} />} />
           <Route path="/graph" element={<Graph setShow={setShow} />} />
+          <Route path="/linkedlist" element={<LinkedList setShow={setShow}/>}/>
         </Routes>
       </div>
   );

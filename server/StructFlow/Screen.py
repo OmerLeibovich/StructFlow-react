@@ -30,9 +30,6 @@ box_width = SCREEN_WIDTH  // columns
 box_height = SCREEN_HEIGHT // rows
 
 
-RECT_WIDTH, RECT_HEIGHT = 50, 50
-QUEUE_START_X, QUEUE_START_Y = 350, 250
-SPACING = 10
 
 
 
