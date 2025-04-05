@@ -53,6 +53,7 @@ export const LINKED_LIST_API = {
   insertLinkedList:(key) => sendRequest(config_LINKEDLIST.apiUrl,"/insert","POST",{ key }),
   deleteLinkedList:() => sendRequest(config_LINKEDLIST.apiUrl,"/delete"),
   searchLinkedList:(key) => sendRequest(config_LINKEDLIST.apiUrl,"/search_node",["POST"],{ key }),
+  resetLinkedList:() => sendRequest(config_LINKEDLIST.apiUrl,"/reset")
 }
 
 

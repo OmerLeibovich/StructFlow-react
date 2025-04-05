@@ -172,7 +172,7 @@ const AVLTree = () => {
 };
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="App">
       <input
         type="text"
         placeholder="Insert number"
@@ -186,25 +186,25 @@ const AVLTree = () => {
       <h3>Tree Nodes: {formatList(nodes)}</h3>
       <h3>BFS Order: {bfsOrder.join(", ")}</h3>
       <h3>DFS Order: {dfsOrder.join(", ")}</h3>
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      <div className="pygameHeader">
         <img
           src={videoSrcAVL}
           alt="AVL Tree"
-          style={{ width: "700px", height: "650px", border: "2px solid black" }}
+          className="pygamescreen"
         />
         <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
           Explanation
         </button>
       </div>
 
-      
-        
-      <div style={{ width: "600px", margin: "20px auto" }}>
-            <button onClick = {handleReset} style={{ width: "100%", height: "50px", fontSize: "18px" }}
+
+      <div className="resetButtonBackground">
+          <button onClick = {handleReset} className="resetButton"
             >
         {resetLabel}
         </button>
             </div>
+
 
       <Modal show={showExplanation} onHide={() => setShowExplanation(false)}>
         <Modal.Header closeButton>

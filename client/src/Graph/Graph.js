@@ -223,7 +223,7 @@ const Graph = () => {
   };
 
   return (
-    <div style={{ textAlign: "center" }}>
+    <div className="App">
       <input
         type="text"
         placeholder="Insert number"
@@ -239,7 +239,7 @@ const Graph = () => {
 
       <h3>Short_Path from {numValue}: {shortPaths.join(", ")}</h3>
 
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      <div className="pygameHeader">
         {showTable && (
           <div className="TableWrapper">
             <table className="Table">
@@ -264,7 +264,7 @@ const Graph = () => {
         )}
 
         <div
-          style={{ position: "relative", width: "700px", height: "650px", }}
+          className="pygameHeader"
           onMouseDown={(e) => {
             if (e.button === 0) handleMouseClick(e);
             else if (e.button === 2) handleRightMouseDown(e);
@@ -276,11 +276,7 @@ const Graph = () => {
           <img
             src={videoSrcGraph}
             alt="Graph"
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "2px solid black",
-            }}
+            className="pygamescreen"
           />
         </div>
         <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
@@ -289,11 +285,12 @@ const Graph = () => {
 
       </div>
 
-      <div style={{ width: "600px", margin: "20px auto" }}>
-        <button onClick={resetGraph} style={{ width: "100%", height: "50px", fontSize: "18px" }}>
-          reset
+        <div className="resetButtonBackground">
+        <button onClick={resetGraph} className="resetButton">
+          Reset
         </button>
       </div>
+
 
 
       <Modal show={showExplanation} onHide={() => setShowExplanation(false)}>
