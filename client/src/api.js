@@ -55,6 +55,10 @@ export const LINKED_LIST_API = {
   searchLinkedList:(key) => sendRequest(config_LINKEDLIST.apiUrl,"/search_node",["POST"],{ key }),
   resetLinkedList:() => sendRequest(config_LINKEDLIST.apiUrl,"/reset")
 }
+export const DOUBLE_LINKED_LIST_API ={
+  getVideoStreamDoubleLinkedList: () => `${config_DOUBLELINKEDLIST.apiUrl}/video_feed_Double_LinkedList?t=${Date.now()}`,
+
+}
 
 
 export const SetApplication = (appName) => 

@@ -7,33 +7,31 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-run_tree = False
-run_graph = False
-run_linkedlist = False
 
 server_process = None
 
 @app.route('/set_application', methods=['POST'])
 def set_application():
-    global run_tree, run_graph,run_linkedlist,server_process
+    global server_process
     data = request.get_json()
     print("Received data:", data)
     app_name = data.get("application", "")
+    run_tree = False
+    run_graph = False
+    run_linkedlist = False
+    run_double_linkedlist = False
 
-    if app_name == "tree":
-        run_tree = True
-        run_graph = False
-        run_linkedlist = False
-    elif app_name == "graph":
-        run_tree = False
-        run_graph = True
-        run_linkedlist = False
-    elif app_name == "linkedlist":
-        run_tree = False
-        run_graph = False
-        run_linkedlist = True
-    else:
-        return jsonify({"error": "Invalid application"}), 400
+    match app_name:
+        case "tree":
+            run_tree = True
+        case "graph":
+            run_graph = True
+        case "linkedlist":
+            run_linkedlist = True
+        case "doublelinkedlist":
+            run_double_linkedlist = True
+        case _:
+            return jsonify({"error": "Invalid application"}), 400
 
    
     if server_process is not None:
@@ -49,6 +47,9 @@ def set_application():
         server_process.start()
     elif run_linkedlist:
         server_process = multiprocessing.Process(target=run_linkedlist_server)
+        server_process.start()
+    elif run_double_linkedlist:
+        server_process = multiprocessing.Process(target=run_double_linkedlist_server)
         server_process.start()
 
     return jsonify({"message": f"{app_name} server started"})
@@ -67,6 +68,11 @@ def run_linkedlist_server():
     from StructFlow.Structures.LinkedList import app_LinkedList,render_linkedlist
     threading.Thread(target=render_linkedlist, daemon=True).start()
     app_LinkedList.run(host="0.0.0.0", port = 5002 , debug = False ,  threaded=True)
+def run_double_linkedlist_server():
+    from StructFlow.Structures.DoubleLinkedList import app_Double_LinkedList,render_Double_linkedlist
+    threading.Thread(target=render_Double_linkedlist, daemon=True).start()
+    app_Double_LinkedList.run(host="0.0.0.0", port = 5003 , debug = False ,  threaded=True)
+
 
 
 if __name__ == "__main__":
