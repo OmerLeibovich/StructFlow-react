@@ -9,4 +9,8 @@ const config_LINKEDLIST = {
   apiUrl: process.env.REACT_APP_API_URL_LINKED_LIST || "http://localhost:5002",
 }
 
-export { config_TREE, config_GRAPH, config_LINKEDLIST };
+const config_DOUBLELINKEDLIST = {
+  apiUrl: process.env.REACT_APP_API_URL_DOUBLE_LINKED_LIST || "http://localhost:5003"
+}
+
+export { config_TREE, config_GRAPH, config_LINKEDLIST,config_DOUBLELINKEDLIST };

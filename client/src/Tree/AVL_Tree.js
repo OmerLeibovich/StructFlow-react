@@ -199,8 +199,7 @@ const AVLTree = () => {
 
 
       <div className="resetButtonBackground">
-          <button onClick = {handleReset} className="resetButton"
-            >
+          <button onClick = {handleReset} className="resetButton">
         {resetLabel}
         </button>
             </div>

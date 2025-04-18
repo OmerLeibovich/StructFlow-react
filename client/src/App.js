@@ -7,6 +7,7 @@ import { SetApplication,TREE_API,GRAPH_API,LINKED_LIST_API } from "../src/api";
 import TreePage from './Tree/AVL_Tree'; 
 import Graph from './Graph/Graph';
 import LinkedList from './Structures/LinkedList';
+import DoubleLinkedList from './Structures/DoubleLinkedList';
 
 function App() {
   const [show, setShow] = useState({ main: false, tree: false, sorts: false, Graph: false, structures: false });
@@ -159,6 +160,20 @@ function App() {
                       LinkedList
                     </Button>
                     </Link>
+                    <Link to="/doublelinkedlist" className="Sub-button">
+                    <Button className="manudrawerSubButtons" onClick={async () => {
+                      if (location.pathname === '/doublelinkedlist') {
+                        handleToggle('main', false);
+                      } else {
+                        handleTogglePage('DoubleLinkedList', true);
+                        SetApplication("doublelinkedlist");
+                        await Reset();
+                      }
+                    }}
+                  >
+                      Double_LinkedList
+                    </Button>
+                    </Link>
                 </Offcanvas.Body>
               </Offcanvas>
             </Col>
@@ -168,6 +183,7 @@ function App() {
           <Route path="/tree" element={<TreePage setShow={setShow} />} />
           <Route path="/graph" element={<Graph setShow={setShow} />} />
           <Route path="/linkedlist" element={<LinkedList setShow={setShow}/>}/>
+          <Route path="/doublelinkedlist" element={<DoubleLinkedList setShow={setShow}/>}/>
         </Routes>
       </div>
   );

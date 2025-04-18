@@ -285,7 +285,7 @@ const Graph = () => {
 
       </div>
 
-        <div className="resetButtonBackground">
+         <div className="resetButtonBackground">
         <button onClick={resetGraph} className="resetButton">
           Reset
         </button>

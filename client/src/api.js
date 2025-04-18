@@ -1,4 +1,4 @@
-import { config_TREE, config_GRAPH, config_LINKEDLIST } from "./config"; 
+import { config_TREE, config_GRAPH, config_LINKEDLIST,config_DOUBLELINKEDLIST } from "./config"; 
 
 async function sendRequest(baseUrl, endpoint, method = "GET", body = null) {
   const options = {
