@@ -57,6 +57,8 @@ export const LINKED_LIST_API = {
 }
 export const DOUBLE_LINKED_LIST_API ={
   getVideoStreamDoubleLinkedList: () => `${config_DOUBLELINKEDLIST.apiUrl}/video_feed_Double_LinkedList?t=${Date.now()}`,
+  insertDoubleLinkedList:(key,side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/insert_doubleLinkedList","POST",{ key,side }),
+  deleteDoubleLinkedList:(side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/delete_doubleLinkedList","POST",{ side }),
 
 }
 
