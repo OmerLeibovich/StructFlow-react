@@ -68,6 +68,8 @@ def run_linkedlist_server():
     from StructFlow.Structures.LinkedList import app_LinkedList,render_linkedlist
     threading.Thread(target=render_linkedlist, daemon=True).start()
     app_LinkedList.run(host="0.0.0.0", port = 5002 , debug = False ,  threaded=True)
+
+
 def run_double_linkedlist_server():
     from StructFlow.Structures.DoubleLinkedList import app_Double_LinkedList,render_Double_linkedlist
     threading.Thread(target=render_Double_linkedlist, daemon=True).start()
