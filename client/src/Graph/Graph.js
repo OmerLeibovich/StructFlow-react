@@ -9,6 +9,7 @@ const Graph = () => {
   const [isRightDragging, setIsRightDragging] = useState(false);
   const [dragStart, setDragStart] = useState(null);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [distances, setDistances] = useState(() => {
     const saved = localStorage.getItem("distances");
     return saved ? JSON.parse(saved) : [];
@@ -273,11 +274,20 @@ const Graph = () => {
           onMouseUp={handleMouseUp}
           onContextMenu={handleContextMenu}
         >
-          <img
-            src={videoSrcGraph}
-            alt="Graph"
-            className="pygamescreen"
-          />
+        {!isImageLoaded && (
+          <div className="spinner-container">
+            <div className="spinner" />
+            <p>Loading Visualization...</p>
+          </div>
+        )}
+        <img
+          src={videoSrcGraph}
+          alt="Graph"
+          className="pygamescreen"
+          style={{ display: isImageLoaded ? "block" : "none" }}
+          onLoad={() => setIsImageLoaded(true)}
+          onError={() => setIsImageLoaded(false)}
+        />
         </div>
         <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
           Explanation

@@ -7,6 +7,7 @@ import { TREE_API } from "../api";
 const AVLTree = () => {
   const [inputValue, setInputValue] = useState("");
   const [showExplanation, setShowExplanation] = useState(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [nodes, setNodes] = useState(() => {
     const saved = localStorage.getItem("treeNodes");
     return saved ? JSON.parse(saved) : [];
@@ -187,10 +188,19 @@ const AVLTree = () => {
       <h3>BFS Order: {bfsOrder.join(", ")}</h3>
       <h3>DFS Order: {dfsOrder.join(", ")}</h3>
       <div className="pygameHeader">
+        {!isImageLoaded && (
+          <div className="spinner-container">
+            <div className="spinner" />
+            <p>Loading Visualization...</p>
+          </div>
+        )}
         <img
           src={videoSrcAVL}
-          alt="AVL Tree"
+          alt="AVL_Tree"
           className="pygamescreen"
+          style={{ display: isImageLoaded ? "block" : "none" }}
+          onLoad={() => setIsImageLoaded(true)}
+          onError={() => setIsImageLoaded(false)}
         />
         <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
           Explanation
