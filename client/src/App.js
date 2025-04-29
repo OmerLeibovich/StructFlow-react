@@ -8,6 +8,7 @@ import TreePage from './Tree/AVL_Tree';
 import Graph from './Graph/Graph';
 import LinkedList from './Structures/LinkedList';
 import DoubleLinkedList from './Structures/DoubleLinkedList';
+import Array from './Structures/Array';
 
 function App() {
   const [show, setShow] = useState({ main: false, tree: false, sorts: false, Graph: false, structures: false });
@@ -146,6 +147,20 @@ function App() {
                   <Offcanvas.Title className="title-center">Structures</Offcanvas.Title>
                 </Offcanvas.Header>
                 <Offcanvas.Body>
+                <Link to="/array" className="Sub-button">
+                    <Button className="manudrawerSubButtons" onClick={async () => {
+                      if (location.pathname === '/array') {
+                        handleToggle('main', false);
+                      } else {
+                        handleTogglePage('Array', true);
+                        SetApplication("array");
+                        await Reset();
+                      }
+                    }}
+                  >
+                      Array
+                    </Button>
+                    </Link>
                 <Link to="/linkedlist" className="Sub-button">
                     <Button className="manudrawerSubButtons" onClick={async () => {
                       if (location.pathname === '/linkedlist') {
@@ -184,6 +199,7 @@ function App() {
           <Route path="/graph" element={<Graph setShow={setShow} />} />
           <Route path="/linkedlist" element={<LinkedList setShow={setShow}/>}/>
           <Route path="/doublelinkedlist" element={<DoubleLinkedList setShow={setShow}/>}/>
+          <Route path="/array" element={<Array setShow={setShow}/>}/>
         </Routes>
       </div>
   );

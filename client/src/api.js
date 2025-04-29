@@ -1,4 +1,4 @@
-import { config_TREE, config_GRAPH, config_LINKEDLIST,config_DOUBLELINKEDLIST } from "./config"; 
+import { config_TREE, config_GRAPH, config_LINKEDLIST,config_DOUBLELINKEDLIST,config_ARRAY } from "./config"; 
 
 async function sendRequest(baseUrl, endpoint, method = "GET", body = null) {
   const options = {
@@ -61,8 +61,12 @@ export const DOUBLE_LINKED_LIST_API ={
   deleteDoubleLinkedList:(side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/delete_doubleLinkedList","POST",{ side }),
   searchDoubleLinkedList:(key,side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/search_node",["POST"],{key,side}),
   resetDoubleLinkedList:() => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/reset")
-  
+}
 
+export const ARRAY_API ={
+  getVideoStreamArray: () => `${config_ARRAY.apiUrl}/video_feed_Array?t=${Date.now()}`,
+  insertArray:(key) => sendRequest(config_ARRAY.apiUrl,"/insert_Array","POST",{ key }),
+  removeArray:(key) => sendRequest(config_ARRAY.apiUrl,"/delete_Array",["POST"],{ key }),
 }
 
 

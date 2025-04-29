@@ -12,5 +12,8 @@ const config_LINKEDLIST = {
 const config_DOUBLELINKEDLIST = {
   apiUrl: process.env.REACT_APP_API_URL_DOUBLE_LINKED_LIST || "http://localhost:5003"
 }
+const config_ARRAY = {
+  apiUrl: process.env.REACT_APP_API_ARRAY || "http://localhost:5004"
+}
 
-export { config_TREE, config_GRAPH, config_LINKEDLIST,config_DOUBLELINKEDLIST };
+export { config_TREE, config_GRAPH, config_LINKEDLIST,config_DOUBLELINKEDLIST,config_ARRAY };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "../App.css";
-import { Button, Modal } from "react-bootstrap";
+import { Button, Modal,Spinner } from "react-bootstrap";
 import { TREE_API } from "../api"; 
 
 
@@ -190,8 +190,8 @@ const AVLTree = () => {
       <div className="pygameHeader">
         {!isImageLoaded && (
           <div className="spinner-container">
-            <div className="spinner" />
-            <p>Loading Visualization...</p>
+            <Spinner animation="border" role="status" variant="primary" />
+            <p className="loading">Loading Visualization...</p>
           </div>
         )}
         <img

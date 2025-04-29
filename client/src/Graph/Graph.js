@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { GRAPH_API } from "../api";
-import { Button, Modal } from "react-bootstrap";
+import { Button, Modal,Spinner } from "react-bootstrap";
 
 const Graph = () => {
   
@@ -276,8 +276,8 @@ const Graph = () => {
         >
         {!isImageLoaded && (
           <div className="spinner-container">
-            <div className="spinner" />
-            <p>Loading Visualization...</p>
+            <Spinner animation="border" role="status" variant="primary" />
+            <p className="loading">Loading Visualization...</p>
           </div>
         )}
         <img

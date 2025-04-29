@@ -20,6 +20,7 @@ def set_application():
     run_graph = False
     run_linkedlist = False
     run_double_linkedlist = False
+    run_Array = False
 
     match app_name:
         case "tree":
@@ -30,6 +31,8 @@ def set_application():
             run_linkedlist = True
         case "doublelinkedlist":
             run_double_linkedlist = True
+        case "array" :
+            run_Array = True
         case _:
             return jsonify({"error": "Invalid application"}), 400
 
@@ -50,6 +53,9 @@ def set_application():
         server_process.start()
     elif run_double_linkedlist:
         server_process = multiprocessing.Process(target=run_double_linkedlist_server)
+        server_process.start()
+    elif run_Array:
+        server_process = multiprocessing.Process(target=run_array)
         server_process.start()
 
     return jsonify({"message": f"{app_name} server started"})
@@ -75,6 +81,10 @@ def run_double_linkedlist_server():
     threading.Thread(target=render_Double_linkedlist, daemon=True).start()
     app_Double_LinkedList.run(host="0.0.0.0", port = 5003 , debug = False ,  threaded=True)
 
+def run_array():
+    from StructFlow.Structures.Array import app_Array,render_Array
+    threading.Thread(target=render_Array, daemon=True).start()
+    app_Array.run(host="0.0.0.0", port = 5004 , debug = False ,  threaded=True)
 
 
 if __name__ == "__main__":
