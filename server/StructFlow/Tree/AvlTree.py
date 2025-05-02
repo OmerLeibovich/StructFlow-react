@@ -1,30 +1,17 @@
-import pygame
-import threading
-from tkinter import  messagebox
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from StructFlow.Tree.BFS_Search import BFS_Search
-from StructFlow.Tree.DFS_Search import DFS_Search
-from StructFlow.Screen import *
-from StructFlow.Video_feed import *
 from StructFlow.TreeNode import *
+from StructFlow.Tree.BFS_Search import *
+
+app_Avl = Flask(__name__)
+CORS(app_Avl)
 
 
-
-app_tree = Flask(__name__)
-CORS(app_tree)
-
-
-
-pygame.init()
-clock = pygame.time.Clock()
-output_frame = None
-lock = threading.Lock()
-bfs_state=False
-dfs_state = False
 visited_nodes = []
-DFS_Targets = []
 
+
+
+# ---------- Node & AVLTree Classes ----------
 
 
 class AVLTree:
@@ -36,74 +23,49 @@ class AVLTree:
         self.max_size = 31
 
     def insert(self, key):
-        if self.contains(key):
-            return
-        
-        valid_nodes = [n for n in self.nodes if n is not None]  
-        current_height = self._get_height(self.root)
-        if len(valid_nodes) >= self.max_size and current_height >= 5:
-            print("Error: Tree is full (max size reached: 31)")
-            return
-        self.update_nodes() 
         self.root = self._insert(self.root, key)
-        self.nodes.append(key)
-
-    def contains(self, key):
-        return self._contains(self.root, key)
-
-    def _contains(self, node, key):
-        if node is None:
-            return False
-        if key == node.key:
-            return True
-        elif key < node.key:
-            return self._contains(node.left, key)
-        else:
-            return self._contains(node.right, key)
 
     def _insert(self, node, key, parent=None):
-        if node is None:
+        if not node:
             return TreeNode(key, parent)
+
         if key < node.key:
             node.left = self._insert(node.left, key, node)
-        else:
+        elif key > node.key:
             node.right = self._insert(node.right, key, node)
+        else:
+            return node  # No duplicates
 
-        node.height = 1 + max(self._get_height(node.left), self._get_height(node.right))
+        node.height = 1 + max(self._get_height(node.left),
+                              self._get_height(node.right))
+
         balance = self._get_balance(node)
 
-        if balance > 1:
-            if key < node.left.key:
-                return self._rotate_right(node)
-            else:
-                node.left = self._rotate_left(node.left)
-                return self._rotate_right(node)
+        # Left Left
+        if balance > 1 and key < node.left.key:
+            return self._rotate_right(node)
 
-        if balance < -1:
-            if key > node.right.key:
-                return self._rotate_left(node)
-            else:
-                node.right = self._rotate_right(node.right)
-                return self._rotate_left(node)
+        # Right Right
+        if balance < -1 and key > node.right.key:
+            return self._rotate_left(node)
+
+        # Left Right
+        if balance > 1 and key > node.left.key:
+            node.left = self._rotate_left(node.left)
+            return self._rotate_right(node)
+
+        # Right Left
+        if balance < -1 and key < node.right.key:
+            node.right = self._rotate_right(node.right)
+            return self._rotate_left(node)
 
         return node
 
-
-    def _get_height(self, node):
-        if node is None:
-            return 0
-        return node.height
-
-    def _get_balance(self, node):
-        if node is None:
-            return 0
-        return self._get_height(node.left) - self._get_height(node.right)
     def delete(self, key):
-        self.update_nodes() 
         self.root = self._delete(self.root, key)
 
     def _delete(self, node, key):
-        if node is None:
+        if not node:
             return node
 
         if key < node.key:
@@ -111,53 +73,38 @@ class AVLTree:
         elif key > node.key:
             node.right = self._delete(node.right, key)
         else:
-            if node.left is None:
-                temp = node.right
-                node = None
-                return temp
-            elif node.right is None:
-                temp = node.left
-                node = None
-                return temp
+            if not node.left:
+                return node.right
+            elif not node.right:
+                return node.left
 
-
-            temp = self.get_min_node(node.right)
+            temp = self._min_value_node(node.right)
             node.key = temp.key
             node.right = self._delete(node.right, temp.key)
 
-        if node is None:
-            return node
-
-        node.height = 1 + max(self._get_height(node.left), self._get_height(node.right))
-
+        node.height = 1 + max(self._get_height(node.left),
+                              self._get_height(node.right))
 
         balance = self._get_balance(node)
 
+        # Rebalance cases
+        if balance > 1 and self._get_balance(node.left) >= 0:
+            return self._rotate_right(node)
 
-        if balance > 1:
-            if key < node.left.key:
-                return self._rotate_right(node)
-            else:
-                node.left = self._rotate_left(node.left)
-                return self._rotate_right(node)
+        if balance > 1 and self._get_balance(node.left) < 0:
+            node.left = self._rotate_left(node.left)
+            return self._rotate_right(node)
 
-        # Right Heavy
-        if balance < -1:
-            if key > node.right.key:
-                return self._rotate_left(node)
-            else:
-                node.right = self._rotate_right(node.right)
-                return self._rotate_left(node)
+        if balance < -1 and self._get_balance(node.right) <= 0:
+            return self._rotate_left(node)
+
+        if balance < -1 and self._get_balance(node.right) > 0:
+            node.right = self._rotate_right(node.right)
+            return self._rotate_left(node)
 
         return node
 
-
-    def get_min_node(self, node):
-        return node if not node or not node.left else self.get_min_node(node.left)
-
     def _rotate_left(self, z):
-        if z is None or z.right is None:
-            return z
         y = z.right
         T2 = y.left
 
@@ -170,8 +117,6 @@ class AVLTree:
         return y
 
     def _rotate_right(self, y):
-        if y is None or y.left is None:
-            return y
         x = y.left
         T2 = x.right
 
@@ -182,236 +127,91 @@ class AVLTree:
         x.height = 1 + max(self._get_height(x.left), self._get_height(x.right))
 
         return x
-    
 
-    
-    def update_nodes(self):
-        self.nodes.clear()  
-        self.update_array(self.root, self.nodes)
-        print("Updated nodes:", self.nodes)
-    
-    
-    def update_array(self, node, array, index=0):
-        if node is not None:
-            
-            if index >= len(array):
-                array.extend([None] * (index - len(array) + 1)) 
+    def _get_height(self, node):
+        return node.height if node else 0
 
-        
-            array[index] = node.key
-            if len(array) > 1 and array[-1] == array[-2]:
-                array.remove(array[-1])
+    def _get_balance(self, node):
+        return self._get_height(node.left) - self._get_height(node.right) if node else 0
 
-            
-            self.update_array(node.left, array, 2 * index + 1)
-            self.update_array(node.right, array, 2 * index + 2)
-        else: 
-            if index < len(array):
-                if node is None:
-                    array[index] = None
+    def _min_value_node(self, node):
+        current = node
+        while current.left:
+            current = current.left
+        return current
 
-        while array and array[-1] is None:
-            array.pop()
+    # --- Convert tree to JSON format for D3/SVG ---
+    def to_dict(self, node=None):
+        if node is None:
+            node = self.root
+        if node is None:
+            return {}
 
-    
+        result = { "name": node.key }
+
+        if node.left:
+            result["left"] = self.to_dict(node.left)
+        if node.right:
+            result["right"] = self.to_dict(node.right)
+
+        return result
+
+
+# ---------- Global Tree ----------
 avl_tree = AVLTree()
 
-@app_tree.route('/insert_AVL', methods=['POST'])
+# ---------- API Routes ----------
+
+@app_Avl.route('/insert', methods=['POST'])
 def insert():
-    global dfs_state,bfs_state
-    if not dfs_state and not bfs_state:
-        data = request.get_json()
-        key = int(data["key"])
+    data = request.get_json()
+    try:
+        key = int(data['key'])
         avl_tree.insert(key)
-        avl_tree.update_array(avl_tree.root, avl_tree.nodes)
-        return jsonify({"status": "inserted", "key": key})
-    else:
-        return jsonify({"error": "Cannot insert while BFS Or DFS is active"}), 400
+        return jsonify({"status": "inserted"}), 200
+    except:
+        return jsonify({"error": "Invalid input"}), 400
 
-@app_tree.route('/delete_AVL', methods=['POST'])
+@app_Avl.route('/delete', methods=['POST'])
 def delete():
-    global dfs_state,bfs_state
-    if not dfs_state and not bfs_state:
-        data = request.get_json()
-        key = int(data["key"])
+    data = request.get_json()
+    try:
+        key = int(data['key'])
         avl_tree.delete(key)
-        avl_tree.update_array(avl_tree.root, avl_tree.nodes)
-        return jsonify({"status": "deleted", "key": key})
-    else:
-        return jsonify({"error": "Cannot delete while BFS Or DFS is active"}), 400
+        return jsonify({"status": "deleted"}), 200
+    except:
+        return jsonify({"error": "Invalid input"}), 400
 
-@app_tree.route('/get_tree', methods=['GET'])
-def get_tree():
-    return jsonify({"nodes": avl_tree.nodes})
+@app_Avl.route('/get_tree_svg', methods=['GET'])
+def get_tree_svg():
+    return jsonify(avl_tree.to_dict()), 200
 
+@app_Avl.route('/reset', methods=['GET'])
+def reset():
+    global avl_tree
+    avl_tree = AVLTree()
+    return jsonify({"status": "reset"}), 200
 
-@app_tree.route('/bfs', methods=['GET'])
-def bfs():
-    global highest, BFS_order,bfs_state,visited_nodes,dfs_state
+@app_Avl.route('/BFS', methods=["GET"])
+def get_BFS_Order():
+    global highest, BFS_order, bfs_state, visited_nodes
 
-    if dfs_state:  
-        return jsonify({"error": "Cannot run DFS while BFS is active"}), 400
- 
+    bfs_state = True
 
-    bfs_state=True
-
-    
     if 'highest' not in globals() or highest is None:
         highest = 0
     if 'BFS_order' not in globals() or not BFS_order:
         BFS_order = []
 
+    highest, BFS_order, BFS_targets = BFS_Search(avl_tree, highest, BFS_order)
 
-    highest, BFS_order, BFS_targets = BFS_Search(avl_tree,highest,BFS_order)
-        
-        
     visited_nodes = [node.key for node in BFS_order]
-        
-    highlighted_numbers = [node.key for node in BFS_targets]
+    highlighted_numbers = [node.key for node in BFS_order]
+
+
+    print (highlighted_numbers)
 
     return jsonify({
-        "bfs_order": visited_nodes,
-           "highlighted_numbers": highlighted_numbers
-        })
+        "highlighted_nodes": highlighted_numbers
+    })
 
-
-@app_tree.route('/dfs', methods=['GET'])
-def dfs():
-    global Stack, DFS_order, dfs_state, DFS_Targets,bfs_state
-
-
-    if bfs_state: 
-        return jsonify({"error": "Cannot run BFS while DFS is active"}), 400
-    
-    dfs_state = True
-
-    if 'DFS_Targets' not in globals() or DFS_Targets is None:
-        DFS_Targets = []
-
-    if 'Stack' not in globals() or Stack is None:
-        Stack = []
-    if 'DFS_order' not in globals() or not DFS_order:
-        DFS_order = []
-
-    Stack, DFS_order, DFS_Target = DFS_Search(avl_tree, Stack, DFS_order)
-
-        
-    if DFS_Target is not None:  
-        DFS_Targets.append(DFS_Target)  
-
-
-    return jsonify({"dfs_order": DFS_Targets})
-
-
-@app_tree.route('/reset_AVL', methods=['GET'])
-def reset():
-    global avl_tree, Stack, DFS_order, BFS_order, DFS_Targets, bfs_state, dfs_state, highest
-
-    avl_tree = AVLTree()  
-    Stack = []
-    DFS_order = []
-    BFS_order = []
-    DFS_Targets = []
-    bfs_state = False
-    dfs_state = False
-    highest = 0 
-
-    return jsonify({"status": "reset successful", "nodes": []}), 200
-
-@app_tree.route('/reset_bfs', methods=['GET'])
-def reset_bfs():
-    global highest, BFS_order, bfs_state, visited_nodes
-    
-    highest = 0
-    BFS_order = []
-    bfs_state = False
-    visited_nodes = []
-    avl_tree.visited.clear()
-
-    return jsonify({"status": "reset successful", "BFS_nodes": []}), 200
-
-
-
-@app_tree.route('/reset_dfs', methods=['GET'])
-def reset_dfs():
-    global Stack, DFS_order, dfs_state, DFS_Targets
-    Stack = []
-    DFS_order = []
-    DFS_Targets = []
-    dfs_state = False
-    avl_tree.visited.clear()
-    return jsonify({"status": "reset successful", "DFS_nodes": []}), 200
-
-
-
-
-
-def get_output_frame():
-    global output_frame
-    if output_frame is not None:
-        return output_frame.copy()
-    return None
-
-Video_Feed = VideoFeed(get_output_frame, lock)
-
-
-
-def draw_tree(node, x, y, level=0, spacing=150, visited_nodes=None, DFS_Targets=None):
-    if node is None:
-        return
-
-    node_color = (255, 0, 0) if (visited_nodes is not None 
-                                 and node.key in visited_nodes) or (DFS_Targets is not None 
-                                                                    and node.key in DFS_Targets) else (0, 0, 255)
-
-
-    pygame.draw.circle(screen, node_color, (x, y), 20)
-    pygame.draw.circle(screen, (0, 0, 0), (x, y), 21, 2)  
-
-    text = font.render(str(node.key), True, (255, 255, 255))
-    text_rect = text.get_rect(center=(x, y))
-    screen.blit(text, text_rect)
-
-    spacing = max(75, spacing // 1.5)  
-    line_offset = 20  
-
-    
-    if node.left:
-        x_left = x - (700 // (2 ** (level + 2)))
-        y_left = y + 100
-        pygame.draw.line(screen, (0, 0, 0), (x, y + line_offset), (x_left, y_left), 2)
-        draw_tree(node.left, x_left, y_left, level + 1, spacing, visited_nodes, DFS_Targets)
-
-    if node.right:
-        x_right = x + (700 // (2 ** (level + 2)))
-        y_right = y + 100
-        pygame.draw.line(screen, (0, 0, 0), (x, y + line_offset), (x_right, y_right), 2)
-        draw_tree(node.right, x_right, y_right, level + 1, spacing, visited_nodes, DFS_Targets)
-
-
-def render_tree():
-    global output_frame, lock, visited_nodes, bfs_state, dfs_state, DFS_Targets
-    running = True
-    while running:
-        clear_screen()
-
-        if avl_tree.root:
-            if bfs_state and visited_nodes: 
-                draw_tree(avl_tree.root, SCREEN_WIDTH // 2, 100, visited_nodes=visited_nodes, DFS_Targets=[])
-            elif dfs_state and DFS_Targets:
-                draw_tree(avl_tree.root, SCREEN_WIDTH // 2, 100, visited_nodes=[], DFS_Targets=DFS_Targets)
-            else:
-                draw_tree(avl_tree.root, SCREEN_WIDTH // 2, 100)
-
-
-        with lock:
-            output_frame = get_frame().copy()
-
-        
-        pygame.time.wait(50)  
-        clock.tick(20)  
-
-
-@app_tree.route('/video_feed_AVL_Tree')
-def video_feed_AVL_Tree():
-    return Video_Feed.response()

@@ -1,237 +1,186 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { use, useEffect, useState } from "react";
 import "../App.css";
-import { Button, Modal,Spinner } from "react-bootstrap";
-import { TREE_API } from "../api"; 
+import { TREE_API } from "../api";
 
+const NODE_RADIUS = 20;
+const VERTICAL_SPACING = 80;
 
-const AVLTree = () => {
+const AVLTreeVisualizer = () => {
+  const [treeData, setTreeData] = useState(null);
   const [inputValue, setInputValue] = useState("");
-  const [showExplanation, setShowExplanation] = useState(false);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const [nodes, setNodes] = useState(() => {
-    const saved = localStorage.getItem("treeNodes");
-    return saved ? JSON.parse(saved) : [];
-  });
-  
-  const [bfsOrder, setBfsOrder] = useState(() => {
-    const saved = localStorage.getItem("bfsOrder");
-    return saved ? JSON.parse(saved) : [];
-  });
-  
-  const [dfsOrder, setDfsOrder] = useState(() => {
-    const saved = localStorage.getItem("dfsOrder");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [resetLabel, setResetLabel] = useState(() => {
-    const saved = localStorage.getItem("resetLabel");
-    return saved ? JSON.parse(saved) : "Reset";
-  });
-  
-  const [videoSrcAVL, setVideoSrcAVL] = useState( TREE_API.getVideoStreamAVL());
-
-  const fetchTreeData = useCallback(async () => {
-    const data = await  TREE_API.getTree();
-    if (data.nodes) {
-      setNodes((prevNodes) =>
-        JSON.stringify(prevNodes) !== JSON.stringify(data.nodes) ? data.nodes : prevNodes
-      );
-    }
-  }, []);
+  const [HighlightsNodes, setHighlightsNodes] = useState(null);
+  const [bfsMode, setBfsMode] = useState(false);
 
 
-
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setVideoSrcAVL( TREE_API.getVideoStreamAVL());
-    }, 200);
-    if (!sessionStorage.getItem("sessionActive")) {
-      sessionStorage.setItem("sessionActive", "true");
-    }
-
-    fetchTreeData(); 
-
-    return () => clearInterval(interval); 
-  },  [fetchTreeData]);
-
-
-
-
-
-  
-  useEffect(() => {
-    localStorage.setItem("treeNodes", JSON.stringify(nodes));
-    localStorage.setItem("bfsOrder", JSON.stringify(bfsOrder));
-    localStorage.setItem("dfsOrder", JSON.stringify(dfsOrder));
-    localStorage.setItem("resetLabel", JSON.stringify(resetLabel));
-  }, [nodes, bfsOrder, dfsOrder,resetLabel]);
-  
-  
-
+  const fetchTree = async () => {
+    const res = await TREE_API.getTree();
+    setTreeData(res);
+  };
 
   const handleInsert = async () => {
-    if (!inputValue) return alert("Error: Please enter a number!");
-
-    const numValue = parseInt(inputValue, 10);
-    setInputValue("");
-    if (isNaN(numValue) || numValue < 0 || numValue > 999) {
-      return alert("Error: Number must be between 0 and 999!");
+    const num = parseInt(inputValue);
+    if (isNaN(num)) {
+      alert("Please enter a valid number");
+      return;
     }
-    if (nodes.includes(numValue)) return alert("Error: Number already exists!");
-
-    const result = await TREE_API.insertNode(numValue);
-    if (!result.error) {
-      
-      fetchTreeData();
-    } else {
-      alert(result.error);
-    }
+    await TREE_API.insertNode(num);
+    setInputValue("");      
+    fetchTree();            
   };
 
-  const handleDelete = async () => {;
-    if (!inputValue) return alert("Error: Please enter a number!");
-    
-    const numValue = parseInt(inputValue, 10);
-    setInputValue("");
-    if (!nodes.includes(numValue)) return alert("Error: Number does not exist!");
-
-    const result = await  TREE_API.deleteNode(numValue);
-    if (!result.error) {
-      fetchTreeData();
-    } else {
-      alert(result.error);
+  const handleDelete = async () => {
+    const num = parseInt(inputValue);
+    if (isNaN(num)) {
+      alert("Please enter a valid number");
+      return;
     }
+    await TREE_API.deleteNode(num);
+    setInputValue("");
+    fetchTree();
   };
-
   const handleBFS = async () => {
-    const result = await  TREE_API.startBFS();
-    setInputValue("");
-    if (!result.error) {
-      localStorage.setItem("bfsOrder", JSON.stringify(result.bfs_order)); 
-      localStorage.setItem("resetLabel", "BFS_Reset"); 
-      setBfsOrder(result.bfs_order);
-      setResetLabel("BFS_Reset");
-    } else {
-      alert(result.error);
+    const res = await TREE_API.startBFS();
+    if (res.highlighted_nodes) {
+      setHighlightsNodes(res.highlighted_nodes);
+      setBfsMode(true);
     }
+    
   };
-
-  const handleDFS = async () => {
-    const result = await  TREE_API.startDFS();
-    setInputValue("");
-    if (!result.error) {
-      localStorage.setItem("dfsOrder", JSON.stringify(result.dfs_order)); 
-      localStorage.setItem("resetLabel", "DFS_Reset"); 
-      setDfsOrder(result.dfs_order);
-      setResetLabel("DFS_Reset");
-    } else {
-      alert(result.error);
-    }
-  };
-  const handleReset = async () => {
-    setInputValue("");
-  
-    if (resetLabel === "BFS_Reset") {
-      await TREE_API.resetBFS();
-      setBfsOrder([]);
-      setResetLabel("Reset")
-      localStorage.removeItem("bfsOrder");
-  
-  
-    } else if (resetLabel === "DFS_Reset") {
-      await TREE_API.resetDFS();
-      setDfsOrder([]);
-      setResetLabel("Reset")
-      localStorage.removeItem("dfsOrder");
-  
-    } else {
-      await TREE_API.resetTree();
-      setNodes([]);
-      setBfsOrder([]);
-      setDfsOrder([]);
-      localStorage.removeItem("treeNodes");
-      localStorage.removeItem("bfsOrder");
-      localStorage.removeItem("dfsOrder");
-      localStorage.clear();
-
-    }
-  
-    fetchTreeData();
+  const handleResetBFS = () => {
+    setBfsMode(false);
+    setHighlightsNodes(null);
   };
   
   
 
-  const formatList = (list) => {
-    return list
-      .filter((item, index, arr) => 
-        item !== null || index < arr.length - 1 
-      )
-      .map((item, index) => 
-        index === 0 ? item : "," + item  
-      )
-      .join(" ");
-};
+  const buildArrayTree = (node, index = 0, array = []) => {
+    while (array.length <= index) {
+      array.push("None");
+    }
+  
+    array[index] = node ? node.name : "None";
+  
+    if (node) {
+      buildArrayTree(node.left, 2 * index + 1, array);
+      buildArrayTree(node.right, 2 * index + 2, array);
+    }
+  
+    if (index === 0) {
+      let lastIndexWithValue = -1;
+      for (let i = array.length - 1; i >= 0; i--) {
+        if (array[i] !== "None") {
+          lastIndexWithValue = i;
+          break;
+        }
+      }
+      array.length = lastIndexWithValue + 1;
+    }
+  
+    return array;
+  };
+
+  
+  
+
+  useEffect(() => {
+    fetchTree();
+  }, []);
+
+  const renderTree = (node, x, y, level = 0, parentPos = null, posIndex = 0) => {
+    if (!node) return [];
+  
+    const horizontalGap = 280;
+    const nextY = y + VERTICAL_SPACING;
+    const offset = horizontalGap / (level + 4);
+  
+    const leftX = x - offset * Math.pow(2, 2 - level);  
+    const rightX = x + offset * Math.pow(2, 2 - level);
+  
+    const elements = [];
+  
+    if (parentPos) {
+      const dx = x - parentPos.x;
+      const dy = y - parentPos.y;
+      const length = Math.sqrt(dx * dx + dy * dy);
+  
+      const shorteningFactor = 1.2;
+      const rawOffset = NODE_RADIUS * shorteningFactor;
+      const maxAllowedOffset = length / 2.2;
+      const actualOffset = Math.min(rawOffset, maxAllowedOffset);
+  
+      const offsetX = (dx / length) * actualOffset;
+      const offsetY = (dy / length) * actualOffset;
+  
+      elements.push(
+        <line
+          key={`line-${parentPos.x}-${x}`}
+          x1={parentPos.x + offsetX}
+          y1={parentPos.y + offsetY}
+          x2={x - offsetX}
+          y2={y - offsetY}
+          stroke="black"
+        />
+      );
+    }
+  
+    elements.push(
+      <g key={`node-${x}-${y}`}>
+        <circle cx={x} cy={y} r={NODE_RADIUS}  fill={
+          bfsMode && HighlightsNodes && HighlightsNodes.includes(node.name)
+            ? "red"
+            : "black"
+        }
+      />
+        <text
+          x={x}
+          y={y + 5}
+          textAnchor="middle"
+          fontSize="14"
+          fill="white"
+        >
+          {node.name}
+        </text>
+      </g>
+    );
+  
+    if (node.left) {
+      elements.push(...renderTree(node.left, leftX, nextY, level + 1, { x, y }));
+    }
+    if (node.right) {
+      elements.push(...renderTree(node.right, rightX, nextY, level + 1, { x, y }));
+    }
+  
+    return elements;
+  };
 
   return (
     <div className="App">
-      <input
-        type="text"
-        placeholder="Insert number"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value.replace(/\D/g, ""))}
-      />
-      <button onClick={handleInsert}>Insert</button>
-      <button onClick={handleDelete}>Delete</button>
-      <button onClick={handleBFS}>BFS</button>
-      <button onClick={handleDFS}>DFS</button>
-      <h3>Tree Nodes: {formatList(nodes)}</h3>
-      <h3>BFS Order: {bfsOrder.join(", ")}</h3>
-      <h3>DFS Order: {dfsOrder.join(", ")}</h3>
-      <div className="pygameHeader">
-        {!isImageLoaded && (
-          <div className="spinner-container">
-            <Spinner animation="border" role="status" variant="primary" />
-            <p className="loading">Loading Visualization...</p>
-          </div>
-        )}
-        <img
-          src={videoSrcAVL}
-          alt="AVL_Tree"
-          className="pygamescreen"
-          style={{ display: isImageLoaded ? "block" : "none" }}
-          onLoad={() => setIsImageLoaded(true)}
-          onError={() => setIsImageLoaded(false)}
+      <h2>AVL Tree Visualizer (SVG)</h2>
+
+      <div className="header">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value.replace(/\D/g, ""))}
+          placeholder="Insert number"
         />
-        <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
-          Explanation
-        </button>
+        <button onClick={handleInsert}>Insert</button>
+        <button onClick={handleDelete}>Delete</button>
+        <button onClick={handleBFS}>Run BFS</button>
+
       </div>
 
-
-      <div className="resetButtonBackground">
-          <button onClick = {handleReset} className="resetButton">
-        {resetLabel}
-        </button>
-            </div>
+      <h3>Tree Nodes: {treeData ? buildArrayTree(treeData).join(", ") : "No data"}</h3>
 
 
-      <Modal show={showExplanation} onHide={() => setShowExplanation(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>AVL Tree Tutorial</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>*Insert Button: Add a number to the AVL Tree.</p>
-          <p>*Delete Button: Remove a number from the AVL Tree.</p>
-          <p>*BFS Button: Press multiple times to see BFS order.</p>
-          <p>*DFS Button: Press multiple times to see DFS order.</p>
-          <p>*Reset: reset to current state.</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowExplanation(false)}>Close</Button>
-        </Modal.Footer>
-      </Modal>
+
+
+      <svg className="svg">
+        <rect className="svg-bg" />
+        {treeData && renderTree(treeData, 500, 80)}
+      </svg>
     </div>
   );
 };
 
-export default AVLTree;
+export default AVLTreeVisualizer;

@@ -36,12 +36,11 @@ export const GRAPH_API = {
   getgraph: () => sendRequest(config_GRAPH.apiUrl, "/get_graph"),
 };
 
-export const TREE_API = {
-  getVideoStreamAVL: () => `${config_TREE.apiUrl}/video_feed_AVL_Tree?t=${Date.now()}`,
-  getTree: () => sendRequest(config_TREE.apiUrl, "/get_tree"),
-  insertNode: (key) => sendRequest(config_TREE.apiUrl, "/insert_AVL", "POST", { key }),
-  deleteNode: (key) => sendRequest(config_TREE.apiUrl, "/delete_AVL", "POST", { key }),
-  startBFS: () => sendRequest(config_TREE.apiUrl, "/bfs"),
+export const TREE_API = { 
+  getTree: () => sendRequest(config_TREE.apiUrl, "/get_tree_svg"),
+  insertNode: (key) => sendRequest(config_TREE.apiUrl, "/insert", "POST", { key }), 
+  deleteNode: (key) => sendRequest(config_TREE.apiUrl, "/delete", "POST", { key }),
+  startBFS: () => sendRequest(config_TREE.apiUrl, "/BFS"),
   startDFS: () => sendRequest(config_TREE.apiUrl, "/dfs"),
   resetTree: () => sendRequest(config_TREE.apiUrl, "/reset_AVL"),
   resetBFS: () => sendRequest(config_TREE.apiUrl, "/reset_bfs"),
@@ -67,6 +66,7 @@ export const ARRAY_API ={
   getVideoStreamArray: () => `${config_ARRAY.apiUrl}/video_feed_Array?t=${Date.now()}`,
   insertArray:(key) => sendRequest(config_ARRAY.apiUrl,"/insert_Array","POST",{ key }),
   removeArray:(key) => sendRequest(config_ARRAY.apiUrl,"/delete_Array",["POST"],{ key }),
+  BubbleSort:() => sendRequest(config_ARRAY.apiUrl,"/Bubble_Sort"),
 }
 
 

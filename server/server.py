@@ -61,9 +61,9 @@ def set_application():
     return jsonify({"message": f"{app_name} server started"})
 
 def run_tree_server():
-    from StructFlow.Tree.AvlTree import app_tree, render_tree
-    threading.Thread(target=render_tree, daemon=True).start()
-    app_tree.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
+    from StructFlow.Tree.AvlTree import app_Avl
+    app_Avl.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
+
 
 def run_graph_server():
     from StructFlow.Graph.Graph import app_graph, render_graph
