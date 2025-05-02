@@ -30,7 +30,6 @@ def BFS_Search(self, highest, BFS_order):
         if not BFS_order:
             BFS_order.append(self.root)
             self.visited.add(self.root.key)
-            BFS_targets.append(self.root)
             return highest, BFS_order
 
         current_level = BFS_order[highest:] 
