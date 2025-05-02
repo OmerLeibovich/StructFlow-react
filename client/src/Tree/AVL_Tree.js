@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "../App.css";
 import { TREE_API } from "../api";
 
@@ -10,6 +10,11 @@ const AVLTreeVisualizer = () => {
   const [inputValue, setInputValue] = useState("");
   const [HighlightsNodes, setHighlightsNodes] = useState(null);
   const [bfsMode, setBfsMode] = useState(false);
+  const [dfsMode,setDfsMode] = useState(false);
+  const [resetMode,setResetMode] = useState("Reset");
+  const inputRef = useRef(null);
+
+
 
 
   const fetchTree = async () => {
@@ -23,9 +28,15 @@ const AVLTreeVisualizer = () => {
       alert("Please enter a valid number");
       return;
     }
+    if (bfsMode || dfsMode){
+      alert("You cant insert when bfs or dfs activate");
+      return;
+    }
     await TREE_API.insertNode(num);
     setInputValue("");      
-    fetchTree();            
+    fetchTree();  
+    inputRef.current?.focus();
+
   };
 
   const handleDelete = async () => {
@@ -34,22 +45,58 @@ const AVLTreeVisualizer = () => {
       alert("Please enter a valid number");
       return;
     }
+    if (bfsMode || dfsMode){
+      alert("You cant delete when bfs or dfs activate");
+      return;
+    }
     await TREE_API.deleteNode(num);
     setInputValue("");
     fetchTree();
+    inputRef.current?.focus();
+
   };
   const handleBFS = async () => {
+    if (dfsMode){
+      alert("You cant use bfs when dfs activate");
+      return;
+    }
     const res = await TREE_API.startBFS();
+    setResetMode("ResetBFS");
     if (res.highlighted_nodes) {
       setHighlightsNodes(res.highlighted_nodes);
       setBfsMode(true);
     }
     
   };
-  const handleResetBFS = () => {
-    setBfsMode(false);
+  const handleDFS = async () => {
+    if (bfsMode){
+      alert("You cant use dfs when bfs activate");
+      return;
+    }
+    const res = await TREE_API.startDFS();
+    setResetMode("ResetDFS");
+    if (res.DFS_Targets) {
+      setHighlightsNodes(res.DFS_Targets);
+      setDfsMode(true);
+    }
+    
+  };
+  const handleReset = async () => {
+    if (resetMode === "Reset") {
+      await TREE_API.resetTree();
+      setTreeData(null);
+    } else if (resetMode === "ResetBFS") {
+      await TREE_API.resetBFS();
+      setBfsMode(false);
+    } else if (resetMode === "ResetDFS") {
+      await TREE_API.resetDFS();
+      setDfsMode(false);
+    }
+    fetchTree();
+    setResetMode("Reset");
     setHighlightsNodes(null);
   };
+  
   
   
 
@@ -125,12 +172,15 @@ const AVLTreeVisualizer = () => {
   
     elements.push(
       <g key={`node-${x}-${y}`}>
-        <circle cx={x} cy={y} r={NODE_RADIUS}  fill={
-          bfsMode && HighlightsNodes && HighlightsNodes.includes(node.name)
-            ? "red"
-            : "black"
-        }
-      />
+        <circle cx={x} cy={y} r={NODE_RADIUS} 
+            fill={
+              (bfsMode || dfsMode) &&
+              HighlightsNodes &&
+              HighlightsNodes.includes(node.name)
+                ? "red"
+                : "black"
+            }
+          />
         <text
           x={x}
           y={y + 5}
@@ -159,6 +209,7 @@ const AVLTreeVisualizer = () => {
 
       <div className="header">
         <input
+          ref={inputRef}
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value.replace(/\D/g, ""))}
@@ -167,18 +218,21 @@ const AVLTreeVisualizer = () => {
         <button onClick={handleInsert}>Insert</button>
         <button onClick={handleDelete}>Delete</button>
         <button onClick={handleBFS}>Run BFS</button>
-
+        <button onClick={handleDFS}>Run DFS</button>
       </div>
 
-      <h3>Tree Nodes: {treeData ? buildArrayTree(treeData).join(", ") : "No data"}</h3>
-
-
-
+      <h3>Tree Nodes: {treeData && treeData.name ? buildArrayTree(treeData).join(", ") : "No data"}</h3>
 
       <svg className="svg">
         <rect className="svg-bg" />
-        {treeData && renderTree(treeData, 500, 80)}
+        {treeData && treeData.name && renderTree(treeData, 500, 80)}
       </svg>
+      <div className="resetButtonBackground">
+            <button onClick = {handleReset} className="resetButton"
+            >
+        {resetMode}
+        </button>
+        </div>
     </div>
   );
 };

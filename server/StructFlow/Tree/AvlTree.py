@@ -2,12 +2,15 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from StructFlow.TreeNode import *
 from StructFlow.Tree.BFS_Search import *
+from StructFlow.Tree.DFS_Search import *
 
 app_Avl = Flask(__name__)
 CORS(app_Avl)
 
-
+bfs_state = False
+dfs_state = False
 visited_nodes = []
+DFS_Targets =[]
 
 
 
@@ -186,12 +189,6 @@ def delete():
 def get_tree_svg():
     return jsonify(avl_tree.to_dict()), 200
 
-@app_Avl.route('/reset', methods=['GET'])
-def reset():
-    global avl_tree
-    avl_tree = AVLTree()
-    return jsonify({"status": "reset"}), 200
-
 @app_Avl.route('/BFS', methods=["GET"])
 def get_BFS_Order():
     global highest, BFS_order, bfs_state, visited_nodes
@@ -203,15 +200,90 @@ def get_BFS_Order():
     if 'BFS_order' not in globals() or not BFS_order:
         BFS_order = []
 
-    highest, BFS_order, BFS_targets = BFS_Search(avl_tree, highest, BFS_order)
+    highest, BFS_order = BFS_Search(avl_tree, highest, BFS_order)
 
     visited_nodes = [node.key for node in BFS_order]
-    highlighted_numbers = [node.key for node in BFS_order]
-
-
-    print (highlighted_numbers)
+    
+    print("Current BFS:", visited_nodes)
 
     return jsonify({
-        "highlighted_nodes": highlighted_numbers
+        "highlighted_nodes": visited_nodes
     })
+
+
+
+@app_Avl.route('/DFS', methods=['GET'])
+def get_DFS_Order():
+    global Stack, DFS_order, dfs_state, DFS_Targets ,bfs_state
+
+
+    if bfs_state: 
+        return jsonify({"error": "Cannot run DFS while BFS is active"}), 400
+    
+    dfs_state = True
+
+    if 'DFS_Targets' not in globals() or DFS_Targets is None:
+        DFS_Targets = []
+
+    if 'Stack' not in globals() or Stack is None:
+        Stack = []
+    if 'DFS_order' not in globals() or not DFS_order:
+        DFS_order = []
+
+    Stack, DFS_order, DFS_Target = DFS_Search(avl_tree, Stack, DFS_order)
+
+        
+    if DFS_Target is not None:  
+        DFS_Targets.append(DFS_Target)  
+
+    print(DFS_Targets)
+
+
+    return jsonify({
+        "DFS_Targets" : DFS_Targets
+    })
+
+
+@app_Avl.route('/reset_AVL', methods=['GET'])
+def reset():
+    global avl_tree, Stack, DFS_order, BFS_order, DFS_Targets, bfs_state, dfs_state, highest
+
+    avl_tree = AVLTree()  
+    Stack = []
+    DFS_order = []
+    BFS_order = []
+    DFS_Targets = []
+    bfs_state = False
+    dfs_state = False
+    highest = 0 
+
+    return jsonify({"status": "reset successful", "nodes": []}), 200
+
+@app_Avl.route('/reset_bfs', methods=['GET'])
+def reset_bfs():
+    global highest, BFS_order, bfs_state, visited_nodes
+    
+    highest = 0
+    BFS_order = []
+    bfs_state = False
+    visited_nodes = []
+    avl_tree.visited.clear()
+
+    return jsonify({"status": "reset successful", "BFS_nodes": []}), 200
+
+
+
+@app_Avl.route('/reset_dfs', methods=['GET'])
+def reset_dfs():
+    global Stack, DFS_order, dfs_state, DFS_Targets
+    Stack = []
+    DFS_order = []
+    DFS_Targets = []
+    dfs_state = False
+    avl_tree.visited.clear()
+    return jsonify({"status": "reset successful", "DFS_nodes": []}), 200
+
+
+
+
 
