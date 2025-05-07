@@ -27,13 +27,13 @@ async function sendRequest(baseUrl, endpoint, method = "GET", body = null) {
 
 
 export const GRAPH_API = {
-  getVideoStreamGraph: () => `${config_GRAPH.apiUrl}/video_feed_Graph?t=${Date.now()}`,
+  getGraphData: () => sendRequest(config_GRAPH.apiUrl,"/graph_data"),
   getLeftMouseClick: (x, y) => sendRequest(config_GRAPH.apiUrl, "/left_mouse_click", "POST", { x, y }),
   getRightMouseClick: (phase, points) => sendRequest(config_GRAPH.apiUrl, "/right_mouse_click", "POST", { phase, points }),
-  getLinesDistance: () => sendRequest(config_GRAPH.apiUrl, "/random_numbers_tolines"),
+  getLinesDistance: () => sendRequest(config_GRAPH.apiUrl, "/randomize_weights"),
+  resetRightClick: () =>sendRequest(config_GRAPH.apiUrl,"/reset_right_click" , "POST"),
   getDijkstraAlgo: (key) => sendRequest(config_GRAPH.apiUrl, "/Dijkstra_algo", "POST", { key }),
   resetGraph: () => sendRequest(config_GRAPH.apiUrl, "/reset"),
-  getgraph: () => sendRequest(config_GRAPH.apiUrl, "/get_graph"),
 };
 
 export const TREE_API = { 
@@ -48,24 +48,24 @@ export const TREE_API = {
 };
 
 export const LINKED_LIST_API = {
-  getVideoStreamLinkedList: () => `${config_LINKEDLIST.apiUrl}/video_feed_LinkedList?t=${Date.now()}`,
+  getLinkedList: () => sendRequest(config_LINKEDLIST.apiUrl,"/data"),
   insertLinkedList:(key) => sendRequest(config_LINKEDLIST.apiUrl,"/insert","POST",{ key }),
   deleteLinkedList:() => sendRequest(config_LINKEDLIST.apiUrl,"/delete"),
-  searchLinkedList:(key) => sendRequest(config_LINKEDLIST.apiUrl,"/search_node",["POST"],{ key }),
+  searchLinkedList:(key) => sendRequest(config_LINKEDLIST.apiUrl,"/search","POST",{ key }),
   resetLinkedList:() => sendRequest(config_LINKEDLIST.apiUrl,"/reset")
 }
 export const DOUBLE_LINKED_LIST_API ={
   getVideoStreamDoubleLinkedList: () => `${config_DOUBLELINKEDLIST.apiUrl}/video_feed_Double_LinkedList?t=${Date.now()}`,
   insertDoubleLinkedList:(key,side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/insert_doubleLinkedList","POST",{ key,side }),
   deleteDoubleLinkedList:(side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/delete_doubleLinkedList","POST",{ side }),
-  searchDoubleLinkedList:(key,side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/search_node",["POST"],{key,side}),
+  searchDoubleLinkedList:(key,side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/search_node","POST",{key,side}),
   resetDoubleLinkedList:() => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/reset")
 }
 
 export const ARRAY_API ={
   getVideoStreamArray: () => `${config_ARRAY.apiUrl}/video_feed_Array?t=${Date.now()}`,
   insertArray:(key) => sendRequest(config_ARRAY.apiUrl,"/insert_Array","POST",{ key }),
-  removeArray:(key) => sendRequest(config_ARRAY.apiUrl,"/delete_Array",["POST"],{ key }),
+  removeArray:(key) => sendRequest(config_ARRAY.apiUrl,"/delete_Array","POST",{ key }),
   BubbleSort:() => sendRequest(config_ARRAY.apiUrl,"/Bubble_Sort"),
 }
 

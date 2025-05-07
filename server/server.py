@@ -66,13 +66,11 @@ def run_tree_server():
 
 
 def run_graph_server():
-    from StructFlow.Graph.Graph import app_graph, render_graph
-    threading.Thread(target=render_graph, daemon=True).start()
+    from StructFlow.Graph.Graph import app_graph
     app_graph.run(host="0.0.0.0", port=5001, debug=False, threaded=True)
 
 def run_linkedlist_server():
-    from StructFlow.Structures.LinkedList import app_LinkedList,render_linkedlist
-    threading.Thread(target=render_linkedlist, daemon=True).start()
+    from StructFlow.Structures.LinkedList import app_LinkedList
     app_LinkedList.run(host="0.0.0.0", port = 5002 , debug = False ,  threaded=True)
 
 

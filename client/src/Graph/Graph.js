@@ -1,167 +1,93 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback,useRef } from "react";
 import { GRAPH_API } from "../api";
-import { Button, Modal,Spinner } from "react-bootstrap";
+import { Button, Modal } from "react-bootstrap";
 
 const Graph = () => {
-  
-  const [videoSrcGraph, setVideoSrcGraph] = useState(GRAPH_API.getVideoStreamGraph());
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
+  const [dijkstraEdges, setDijkstraEdges] = useState([]);
+  const rightClickStartRef = useRef(null);
+
   const [inputValue, setInputValue] = useState("");
-  const [isRightDragging, setIsRightDragging] = useState(false);
-  const [dragStart, setDragStart] = useState(null);
+  const [distances, setDistances] = useState([]);
+  const [data, setData] = useState({});
+  const [showTable, setShowTable] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const [distances, setDistances] = useState(() => {
-    const saved = localStorage.getItem("distances");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [numValue, setNumValue] = useState(() => {
-    const saved = localStorage.getItem("numValue");
-    return saved ? JSON.parse(saved) : null;
-  });
 
-  const [shortPaths, setShortPaths] = useState(() => {
-    const saved = localStorage.getItem("shortPaths");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem("data");
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  const [showTable, setShowTable] = useState(() => {
-    const saved = localStorage.getItem("showTable");
-    return saved ? JSON.parse(saved) : false;
-  });
-
-
-  const fetchGraphData = useCallback(async () => {
-    const graphData = await GRAPH_API.getgraph();
-    if (graphData && graphData.distanses) {
-      setDistances(graphData.distanses);
-    }
+  const fetchGraphState = useCallback(async () => {
+    const response = await GRAPH_API.getGraphData(); // צריך להיות מוגדר ב-api שלך
+    setNodes(response.nodes || []);
+    setEdges(response.edges || []);
+    setDijkstraEdges(response.highlighted_edges || []);
   }, []);
 
-
-  useEffect(() => {
-
-    const interval = setInterval(() => {
-      setVideoSrcGraph(GRAPH_API.getVideoStreamGraph());
-    }, 200);
-
-
-    fetchGraphData();
-    return () => clearInterval(interval);
-  },  [fetchGraphData] );
+  const getRelativeClick = (e) => {
+    const svgElement = document.querySelector("svg"); 
+    const rect = svgElement.getBoundingClientRect();
+    const x = (e.clientX - rect.left);
+    const y = (e.clientY - rect.top);
+    return { xRelative: x / 700, yRelative: y / 650 };
+  };
   
 
-  useEffect(() => {
-    localStorage.setItem("distances", JSON.stringify(distances));
-    localStorage.setItem("numValue", JSON.stringify(numValue));
-    localStorage.setItem("shortPaths", JSON.stringify(shortPaths));
-    localStorage.setItem("data", JSON.stringify(data));
-    localStorage.setItem("showTable", JSON.stringify(showTable));
-  }, [distances, numValue, shortPaths, data, showTable]);
- 
-
-  
-  const getRelativeCoordinates = (e) => {
-    const image = e.target;
-    const imgWidth = image.offsetWidth;
-    const imgHeight = image.offsetHeight;
-    const imageRect = image.getBoundingClientRect();
-    const x = e.clientX - imageRect.left;
-    const y = e.clientY - imageRect.top;
-    const whiteAreaWidth = 700;
-    const whiteAreaHeight = 650;
-    const whiteAreaX = (imgWidth - whiteAreaWidth) / 2;
-    const whiteAreaY = (imgHeight - whiteAreaHeight) / 2;
-
-    if (
-      x >= whiteAreaX &&
-      x < whiteAreaX + whiteAreaWidth &&
-      y >= whiteAreaY &&
-      y <= whiteAreaY + whiteAreaHeight
-    ) {
-      return {
-        xRelative: (x - whiteAreaX) / whiteAreaWidth,
-        yRelative: (y - whiteAreaY) / whiteAreaHeight,
-      };
-    }
+  const isDijkstraEdge = (start, end) => {
+    return dijkstraEdges.some(
+      ([s, e]) =>
+        (s[0] === start[0] && s[1] === start[1] && e[0] === end[0] && e[1] === end[1]) ||
+        (s[0] === end[0] && s[1] === end[1] && e[0] === start[0] && e[1] === start[1])
+    );
   };
 
-  const handleMouseClick = async (e) => {
+  const handleClick = async (e) => {
     if (e.button === 0) {
-      const coords = getRelativeCoordinates(e);
-      if (!coords) return;
-      const { xRelative, yRelative } = coords;
-      try {
-        await GRAPH_API.getLeftMouseClick(xRelative, yRelative);
-      } catch (error) {
-        console.error("Error:", error);
+      const { xRelative, yRelative } = getRelativeClick(e);
+      await GRAPH_API.getLeftMouseClick(xRelative, yRelative);
+      await GRAPH_API.resetRightClick();
+      fetchGraphState();
+      
+    }
+  };
+
+  const handleRightClick = async (e) => {
+    e.preventDefault();
+    if (e.button !== 2) return;
+
+    const { xRelative, yRelative } = getRelativeClick(e);
+    rightClickStartRef.current = { x: xRelative, y: yRelative };
+
+    const handleMouseUp = async (ev) => {
+      if (ev.button === 2 && rightClickStartRef.current) {
+        const { xRelative: xEnd, yRelative: yEnd } = getRelativeClick(ev);
+        await GRAPH_API.getRightMouseClick("start", [
+          {
+            x: Math.round(rightClickStartRef.current.x * 700),
+            y: Math.round(rightClickStartRef.current.y * 650),
+          },
+        ]);
+        await GRAPH_API.getRightMouseClick("end", {
+          x: Math.round(xEnd * 700),
+          y: Math.round(yEnd * 650),
+        });
+        fetchGraphState();
+        rightClickStartRef.current = null;
+        document.removeEventListener("mouseup", handleMouseUp);
       }
-    }
-  };
+    };
 
-  const sendRightMouseClick = async (phase, points) => {
-    try {
-      await GRAPH_API.getRightMouseClick(phase, points);
-    } catch (error) {
-      console.error("Error sending right mouse click", error);
-    }
+    document.addEventListener("mouseup", handleMouseUp);
   };
-
-  const handleRightMouseDown = (e) => {
-    if (e.button === 2) {
-      e.preventDefault();
-      const coords = getRelativeCoordinates(e);
-      if (coords) {
-        const absX = Math.round(coords.xRelative * 700);
-        const absY = Math.round(coords.yRelative * 650);
-        sendRightMouseClick("start", [{ x: absX, y: absY }]);
-      }
-      setIsRightDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
-
-  const handleMouseMove = (e) => {
-    if (isRightDragging && dragStart) {
-      const coords = getRelativeCoordinates(e);
-      if (coords) {
-        const absX = Math.round(coords.xRelative * 700);
-        const absY = Math.round(coords.yRelative * 650);
-        console.log("Dragging at:", absX, absY);
-      }
-    }
-  };
-
-  const handleMouseUp = (e) => {
-    if (e.button === 2 && isRightDragging) {
-      e.preventDefault();
-      const coords = getRelativeCoordinates(e);
-      if (coords) {
-        const absX = Math.round(coords.xRelative * 700);
-        const absY = Math.round(coords.yRelative * 650);
-        sendRightMouseClick("end", { x: absX, y: absY });
-      }
-      setIsRightDragging(false);
-      setDragStart(null);
-    }
-  };
-
-  const handleContextMenu = (e) => e.preventDefault();
 
   const Random_distances = async () => {
     setInputValue("");
     const result = await GRAPH_API.getLinesDistance();
     if (!result.error) {
       setDistances(result.LinesDis);
+      fetchGraphState();
     } else {
       alert(result.error);
     }
   };
-
+  
   const Dijkstra_Start = async () => {
     if (!inputValue) return alert("Please enter a number!");
     const parsedValue = parseInt(inputValue, 10);
@@ -171,7 +97,6 @@ const Graph = () => {
       const response = await GRAPH_API.getDijkstraAlgo(parsedValue);
       if (!response) return;
 
-      const shortestPaths = response.Shortest_paths;
       const distanceKey = response.Key_Distances;
 
       if (!distanceKey || distanceKey[String(parsedValue)] === Infinity) {
@@ -180,48 +105,31 @@ const Graph = () => {
       }
 
 
-      
-      
-
-      setNumValue(parsedValue);
-
-      const weightsArray = Object.values(shortestPaths).filter(value => value !== 0);
-      setShortPaths(weightsArray);
-
-  
       const filteredData = Object.fromEntries(
         Object.entries(distanceKey).filter(([node]) => node !== String(parsedValue))
       );
       setData(filteredData);
-
       setShowTable(true);
+      fetchGraphState();
 
     } catch (error) {
       console.error("Error calling Dijkstra API:", error);
     }
   };
 
-
   const resetGraph = async () => {
-    setDistances([]);
+    setNodes([]);
+    setEdges([]);
     setInputValue("");
-    setNumValue(null);
-    setShortPaths([]);
     setData({});
     setShowTable(false);
-
-  
-    localStorage.removeItem("distances");
-    localStorage.removeItem("numValue");
-    localStorage.removeItem("shortPaths");
-    localStorage.removeItem("data");
-    localStorage.removeItem("showTable");
-
-
-
-
     await GRAPH_API.resetGraph();
+    fetchGraphState();
   };
+
+  useEffect(() => {
+    fetchGraphState();
+  }, [fetchGraphState]);
 
   return (
     <div className="App">
@@ -234,85 +142,110 @@ const Graph = () => {
       <button onClick={Dijkstra_Start}>Pick a node</button>
       <button onClick={Random_distances}>Random</button>
 
+      <h3>Distances: {distances.join(", ")}</h3>
 
-      <h3>distances: {distances.join(", ")}</h3>
-
-
-      <h3>Short_Path from {numValue}: {shortPaths.join(", ")}</h3>
-
-      <div className="pygameHeader">
+      <div>
         {showTable && (
           <div className="TableWrapper">
             <table className="Table">
               <thead>
-                <tr>
-                  <th>Node</th>
-                  <th>Distance</th>
-                </tr>
+                <tr><th>Node</th><th>Distance</th></tr>
               </thead>
               <tbody>
-              {Object.entries(data)
-                .filter(([_, distance]) => distance !== Infinity)
-                .map(([node, distance]) => (
-                  <tr key={node}>
-                    <td>{node}</td>
-                    <td>{distance}</td>
-                  </tr>
-              ))}
+                {Object.entries(data)
+                  .filter(([_, dist]) => dist !== Infinity)
+                  .map(([node, dist]) => (
+                    <tr key={node}><td>{node}</td><td>{dist}</td></tr>
+                  ))}
               </tbody>
             </table>
           </div>
         )}
 
-        <div
-          className="pygameHeader"
-          onMouseDown={(e) => {
-            if (e.button === 0) handleMouseClick(e);
-            else if (e.button === 2) handleRightMouseDown(e);
+                <svg
+          width={700}
+          height={650}
+          onMouseDown={handleClick}
+          onContextMenu={handleRightClick}
+          style={{
+            border: "1px solid black",
+            background: "white",
+            userSelect: "none",
+            WebkitUserSelect: "none",
+            MozUserSelect: "none",
+            pointerEvents: "all",
           }}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onContextMenu={handleContextMenu}
         >
-        {!isImageLoaded && (
-          <div className="spinner-container">
-            <Spinner animation="border" role="status" variant="primary" />
-            <p className="loading">Loading Visualization...</p>
-          </div>
-        )}
-        <img
-          src={videoSrcGraph}
-          alt="Graph"
-          className="pygamescreen"
-          style={{ display: isImageLoaded ? "block" : "none" }}
-          onLoad={() => setIsImageLoaded(true)}
-          onError={() => setIsImageLoaded(false)}
-        />
-        </div>
+          {/* Edges */}
+          {edges.map(([start, end, weight], index) => {
+            const midX = (start[0] + end[0]) / 2;
+            const midY = (start[1] + end[1]) / 2;
+            return (
+              <g key={index}>
+                <line
+                  x1={start[0]}
+                  y1={start[1]}
+                  x2={end[0]}
+                  y2={end[1]}
+                  stroke={isDijkstraEdge(start, end) ? "red" : "black"}
+                  strokeWidth={5}
+                />
+                {weight && (
+                  <text
+                    x={midX -20}
+                    y={midY -20}
+                    fontSize="25"
+                    textAnchor="middle"
+                    fill="blue"
+                    style={{ userSelect: "none", pointerEvents: "none" }}
+                  >
+                    {weight}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Nodes */}
+          {nodes.map(([x, y, num], index) => (
+            <g key={index}>
+              <circle cx={x} cy={y} r={25} fill="#ADD8E6" stroke="black" strokeWidth={2} />
+              <text
+                x={x}
+                y={y + 5}
+                fontSize="16"
+                textAnchor="middle"
+                fill="red"
+                style={{ userSelect: "none", pointerEvents: "none" }}
+              >
+                {num}
+              </text>
+            </g>
+          ))}
+        </svg>
+
+
         <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
           Explanation
         </button>
 
+        <div className="resetButtonBackground">
+          <button onClick={resetGraph} className="resetButton">
+            Reset
+          </button>
+        </div>
       </div>
-
-         <div className="resetButtonBackground">
-        <button onClick={resetGraph} className="resetButton">
-          Reset
-        </button>
-      </div>
-
-
 
       <Modal show={showExplanation} onHide={() => setShowExplanation(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Graph Tutorial</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>*Left click mouse: choose place to put node.</p>
-          <p>*Right click mouse: hold to connect 2 nodes with line.</p>
-          <p>*Random Button: give random distances to lines.</p>
-          <p>*Pick a node Button: get all distance from any node to the chosen node.</p>
-          <p>*Reset: reset all the screen.</p>
+          <p>* Left click: place a node</p>
+          <p>* Right click & drag: connect 2 nodes with a line</p>
+          <p>* Random: assign random weights</p>
+          <p>* Pick a node: run Dijkstra from that node</p>
+          <p>* Reset: clears everything</p>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowExplanation(false)}>Close</Button>

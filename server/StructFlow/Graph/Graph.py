@@ -1,30 +1,19 @@
-import pygame
-import threading
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import random
-from StructFlow.Screen import *
-from StructFlow.Video_feed import *
-
-
 
 app_graph = Flask(__name__)
 CORS(app_graph)
 
+# קבועים
+CIRCLE_RADIUS = 25
+MIN_DISTANCE = 50
 
-pygame.init()
-clock = pygame.time.Clock()
-
-
-output_frame = None
-lock = threading.Lock()
-current_line_start = None   
+current_line_start = None
 linesDistance = []
 count = 1
-dijkstra_path_edges = [] 
-rendering_active = True
+dijkstra_path_edges = []
 random_Activity = False
-
 
 class Graph:
     def __init__(self):
@@ -37,6 +26,7 @@ class Graph:
     def add_edge(self, node1, node2, weight):
         if node1 in self.nodes and node2 in self.nodes:
             self.edges.append((node1, node2, weight))
+
 
     def dijkstra_all(self,start, nodes, edges):
 
@@ -66,6 +56,17 @@ class Graph:
                     heapq.heappush(pq, (alt, v))
         
         return dist, prev, edge_used
+    
+
+def find_node_at_point(point):
+    x, y = int(point["x"]), int(point["y"])
+    for circle in graph.nodes:
+        cx, cy = circle[:2]
+        distance = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+        if distance <= CIRCLE_RADIUS:
+            return (cx, cy)  
+    return None
+
 
     
 
@@ -73,105 +74,97 @@ class Graph:
 graph = Graph()
 
 
+@app_graph.route("/graph_data", methods=["GET"])
+def get_graph_data():
+    return jsonify({
+        "nodes": graph.nodes,
+        "edges": graph.edges,
+        "highlighted_edges": dijkstra_path_edges
+    }), 200
+
+
 @app_graph.route('/left_mouse_click', methods=['POST'])
 def left_mouse_click():
-    global random_Activity
-    if (not random_Activity):
-        global count
-        data = request.get_json()
-        
-        # Get the relative coordinates (floats between 0 and 1)
-        rel_x = data.get('x')
-        rel_y = data.get('y')
-        print("Relative coordinates received:", rel_x, rel_y)
-        
-        if rel_x is not None and rel_y is not None:
-            # Convert relative coordinates to absolute coordinates (pixels)
-            abs_x = int(float(rel_x) * 700)
-            abs_y = int(float(rel_y) * 650)
-            print(f"Converted absolute coordinates: x={abs_x}, y={abs_y}")
-            
-            # Check if the click is too close to any existing circle
-            for circle in graph.nodes:
-                    cx, cy = circle[:2]
-                    distance = ((abs_x - cx) ** 2 + (abs_y - cy) ** 2) ** 0.5
-                    if distance < MIN_DISTANCE:
-                        return jsonify({"message": "Click is too close to an existing circle, no new circle added."}), 200
-
-
-            # Add the new circle to the list of circles if no overlap
-            graph.nodes.append((abs_x, abs_y) + (count,))
-
-            count+=1
-            return jsonify({"x": abs_x, "y": abs_y})
-        else:
-            return jsonify({"error": "x and y values are required"}), 400
-    else:
+    global count, random_Activity
+    if random_Activity:
         return jsonify({"error": "You can't add a new point when random is active."}), 400
 
-    
+    data = request.get_json()
+    rel_x = data.get('x')
+    rel_y = data.get('y')
 
-@app_graph.route('/right_mouse_click', methods=["POST"])
+    if rel_x is None or rel_y is None:
+        return jsonify({"error": "x and y values are required"}), 400
+
+    abs_x = int(rel_x * 700)
+    abs_y = int(rel_y * 650)
+
+    for circle in graph.nodes:
+        cx, cy = circle[:2]
+        distance = ((abs_x - cx) ** 2 + (abs_y - cy) ** 2) ** 0.5
+        if distance < MIN_DISTANCE:
+            return jsonify({"message": "Too close to existing node"}), 200
+
+    graph.nodes.append((abs_x, abs_y, count))
+    count += 1
+    return jsonify({"x": abs_x, "y": abs_y})
+
+
+@app_graph.route('/right_mouse_click', methods=['POST'])
 def right_mouse_click():
     global current_line_start
     data = request.get_json()
     phase = data.get("phase")
     points = data.get("points")
-    
+
     if not points:
         return jsonify({"error": "No points provided"}), 400
-
     if isinstance(points, dict):
         points = [points]
 
     if phase == "start":
         current_line_start = points[0]
-        return jsonify({"status": "Starting points received"}), 200
+        return jsonify({"status": "Start received"}), 200
+
     elif phase == "end":
         end_point = points[0]
-        if current_line_start is not None:
-            if point_in_circle(current_line_start) and point_in_circle(end_point):
-                circle_start = get_circle_center(current_line_start)
-                circle_end = get_circle_center(end_point)
-                if circle_start != circle_end:
-                    exists = any(
-                        (edge[:2] == (circle_start, circle_end) or edge[:2] == (circle_end, circle_start))
-                        for edge in graph.edges
-                    )
-                    if not exists:
-                        graph.edges.append((circle_start, circle_end))
-                        print("Line added:", circle_start, circle_end)
-                    else:
-                        print("Line not added: line already exists between these circles.")
-                else:
-                    print("Line not added: cannot connect a circle to itself.")
-            else:
-                print("Line not added: starting or ending point is not within a circle.")
-            current_line_start = None
-        return jsonify({"status": "Ending points received"}), 200
-    else:
-        return jsonify({"error": "Invalid phase value"}), 400
 
+        if current_line_start is None:
+            return jsonify({"error": "Start point missing"}), 400
 
-    
-@app_graph.route('/random_numbers_tolines', methods=["GET"])
-def random_numbers_tolines():
-    global linesDistance,dijkstra_path_edges,random_Activity
+        start_node = find_node_at_point(current_line_start)
+        end_node = find_node_at_point(end_point)
+
+        if not start_node or not end_node or start_node == end_node:
+            return jsonify({"error": "Invalid connection"}), 400
+
+        exists = any(
+            (edge[:2] == (start_node, end_node) or edge[:2] == (end_node, start_node))
+            for edge in graph.edges
+        )
+
+        if not exists:
+            graph.edges.append((start_node, end_node))
+            return jsonify({"status": "Edge added"}), 200
+        else:
+            return jsonify({"message": "Edge already exists"}), 200
+
+    return jsonify({"error": "Invalid phase"}), 400
+
+@app_graph.route("/randomize_weights", methods=["GET"])
+def randomize_weights():
+    global graph, linesDistance, random_Activity
     random_Activity = True
-    dijkstra_path_edges = []
-    linesDistance = []
-    for i in range(len(graph.edges)):
-        random_num = random.randint(1, 100) 
-        graph.edges[i] = graph.edges[i][:2] + (random_num,)
-        linesDistance.append(random_num)
-    linesDistance_sorted = sorted(linesDistance)
-    return jsonify({"LinesDis": linesDistance_sorted})
+    linesDistance.clear()
 
-
-@app_graph.route('/get_graph',methods = ["GET"])
-def get_graph():
-    global linesDistance
-    return jsonify ({"distanses":sorted(linesDistance)})
+    new_edges = []
+    for (n1, n2) in graph.edges:
+        weight = random.randint(1, 20)
+        new_edges.append((n1, n2, weight))
+        linesDistance.append(weight)
+    
+    graph.edges = new_edges
+    return jsonify({"LinesDis": linesDistance}), 200
 
 
 @app_graph.route('/Dijkstra_algo', methods=["POST"])
@@ -246,6 +239,12 @@ def Dijkstra_algo():
         "Key_Distances": key_to_distance,
     })
 
+@app_graph.route('/reset_right_click', methods=['POST'])
+def reset_right_click():
+    global current_line_start
+    current_line_start = None
+    return jsonify({"status": "Right-click start reset"}), 200
+
 @app_graph.route("/reset" , methods = ["GET"])
 def reset():
     global current_line_start,linesDistance,count,dijkstra_path_edges,random_Activity
@@ -260,91 +259,4 @@ def reset():
     
     return jsonify({"message": "All was reset"}), 200
 
-def get_output_frame():
-    global output_frame
-    if output_frame is not None:
-        return output_frame.copy()
-    return None
 
-Video_Feed = VideoFeed(get_output_frame, lock)
-
-    
-
-
-def point_in_circle(point):
-    x = int(point["x"])
-    y = int(point["y"])
-    for circle in graph.nodes:
-        cx, cy = circle[:2]
-        distance = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
-        if distance <= CIRCLE_RADIUS:
-            return True
-    return False
-
-def get_circle_center(point):
-    x = int(point["x"])
-    y = int(point["y"])
-    for circle in graph.nodes:
-        cx, cy = circle[:2]
-        distance = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
-        if distance <= CIRCLE_RADIUS:
-            return (cx, cy)
-    return (x, y)
-
-def render_graph():
-    global linesDistance, output_frame, lock, dijkstra_path_edges
-    while rendering_active:
-        clear_screen()
-
-
-        for edge in graph.edges:
-            edge_to_check = edge if len(edge) == 2 else edge[:2]
-            if dijkstra_path_edges and any(
-                ((e[0] == edge_to_check[0] and e[1] == edge_to_check[1]) or
-                 (e[0] == edge_to_check[1] and e[1] == edge_to_check[0]))
-                for e in dijkstra_path_edges
-            ):
-                edge_color = (0, 255, 0)  
-            else:
-                edge_color = (0, 0, 0)
-            pygame.draw.line(screen, edge_color, edge[0], edge[1], 6)
-
-
-        for circle in graph.nodes:
-            x, y, num = circle
-            pygame.draw.circle(screen, (173, 216, 230), (x, y), CIRCLE_RADIUS)
-            text = font.render(str(num), True, (255, 0 , 0))
-            text_rect = text.get_rect(center=(x, y))
-            screen.blit(text, text_rect)
-
-
-        if linesDistance:
-            for line in graph.edges:
-                if len(line) >= 3:
-                    start, end, weight = line
-                    mid_x = (start[0] + end[0]) // 2
-                    mid_y = (start[1] + end[1]) // 2
-                    text = font.render(str(weight), True, (0, 0, 0))
-                    text_rect = text.get_rect(center=(mid_x, mid_y))
-                    pygame.draw.rect(screen, (255, 255, 0), text_rect.inflate(10, 10))
-                    screen.blit(text, text_rect)
-        
-        with lock:
-            output_frame = get_frame().copy()
-
-
-
-
-        pygame.time.wait(50) 
-        clock.tick(30)
-
-         
-
-
-
-
-@app_graph.route('/video_feed_Graph')
-def video_feed_Graph():
-    return Video_Feed.response()
-
-    

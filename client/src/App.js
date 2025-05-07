@@ -14,13 +14,12 @@ function App() {
   const [show, setShow] = useState({ main: false, tree: false, sorts: false, Graph: false, structures: false });
   const location = useLocation();
 
-  const Reset = async () => {
-    // await  TREE_API.resetTree();
-    await GRAPH_API.resetGraph();
-    localStorage.clear();
-    sessionStorage.removeItem("sessionActive");
-    setShow({ main: false, tree: false, sorts: false, Graph: false, structures: false });
-  };
+  // const Reset = async () => {
+  //   await GRAPH_API.resetGraph();
+  //   localStorage.clear();
+  //   sessionStorage.removeItem("sessionActive");
+  //   setShow({ main: false, tree: false, sorts: false, Graph: false, structures: false });
+  // };
 
   const handleToggle = (menu, state) => setShow(prev => ({ ...prev, [menu]: state }));
   const handleTogglePage = (page, state) => {
@@ -31,9 +30,6 @@ function App() {
 
   return (
       <div className="background">
-      <header className="header">
-        !צריך רק אחד שיאמין בך
-      </header>
         <Container fluid>
           <Row className="full-height-row">
             <Col>
@@ -72,7 +68,7 @@ function App() {
                       } else {
                         handleTogglePage('Graph', true);
                         SetApplication("graph");
-                        await Reset();
+                        // await Reset();
                       }
                     }}
                   >
@@ -89,7 +85,7 @@ function App() {
                       className="manudrawerSubButtons"
                       onClick={async () => {
                         setShow({ main: false, tree: false, sorts: false, Graph: false, structures: false });
-                        await Reset()
+                        // await Reset()
                       }}
                     >
                       HomePage
@@ -116,7 +112,7 @@ function App() {
                       } else {
                         handleTogglePage('AVL_Tree', true);
                         SetApplication("tree");
-                        await Reset();
+                        // await Reset();
                       }
                     }}
                   >
@@ -154,7 +150,7 @@ function App() {
                       } else {
                         handleTogglePage('Array', true);
                         SetApplication("array");
-                        await Reset();
+                        // await Reset();
                       }
                     }}
                   >
@@ -168,7 +164,7 @@ function App() {
                       } else {
                         handleTogglePage('LinkedList', true);
                         SetApplication("linkedlist");
-                        await Reset();
+                        // await Reset();
                       }
                     }}
                   >
@@ -182,7 +178,7 @@ function App() {
                       } else {
                         handleTogglePage('DoubleLinkedList', true);
                         SetApplication("doublelinkedlist");
-                        await Reset();
+                        // await Reset();
                       }
                     }}
                   >
@@ -195,6 +191,7 @@ function App() {
           </Row>
         </Container>
         <Routes>
+        <Route path="/" element={<div className="header">!צריך רק אחד שיאמין בך</div>} />
           <Route path="/tree" element={<TreePage setShow={setShow} />} />
           <Route path="/graph" element={<Graph setShow={setShow} />} />
           <Route path="/linkedlist" element={<LinkedList setShow={setShow}/>}/>

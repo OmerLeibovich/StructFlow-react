@@ -1,157 +1,130 @@
-import pygame
-import threading
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-import time
-from StructFlow.Video_feed import *
-from StructFlow.Structures.LinkedListFunc import *
-from StructFlow.Node import *
-from StructFlow.Screen import *
-from StructFlow.DisplayMessage import *
-
 
 app_LinkedList = Flask(__name__)
 CORS(app_LinkedList)
 
+# ----- Node and LinkedList Classes -----
 
-pygame.init()
-clock = pygame.time.Clock()
-
-current_message = None
-message_timer = 0
-
-
-output_frame = None
-lock = threading.Lock()
-
+class Node:
+    def __init__(self, value, x, y):
+        self.value = value
+        self.x = x
+        self.y = y
+        self.next = None
 
 class LinkedList:
     def __init__(self):
         self.head = None
-        self.highlighted_node = None
-        self.search_target = None
-        self.animating = False
+        self.spacing_x = 100
+        self.spacing_y = 80
+        self.node_radius = 25
+        self.screen_width = 700
+        self.screen_height = 600
 
+    def to_list(self):
+        result = []
+        current = self.head
+        while current:
+            result.append({
+                "value": current.value,
+                "x": current.x,
+                "y": current.y
+            })
+            current = current.next
+        return result
 
     def add(self, value):
         if not self.head:
-            self.head = Node(value, NODE_SPACING, ROW_SPACING)
+            self.head = Node(value, self.spacing_x, self.spacing_y)
         else:
-            # Traverse to the end of the list
             current = self.head
             while current.next:
                 current = current.next
-            # Determine new node position
-            new_x = current.x + NODE_SPACING
+            new_x = current.x + self.spacing_x
             new_y = current.y
-            if new_x + NODE_RADIUS * 2 > SCREEN_WIDTH:  # Move to next row
-                new_x = NODE_SPACING
-                new_y += ROW_SPACING
+            if new_x + self.spacing_x > self.screen_width:
+                new_x = self.spacing_x
+                new_y += self.spacing_y
             current.next = Node(value, new_x, new_y)
 
     def remove_last(self):
         if not self.head:
             return
-
         if not self.head.next:
             self.head = None
-            update_positions(self)
             return
-
-
         current = self.head
         while current.next and current.next.next:
             current = current.next
-
-
         current.next = None
-        update_positions(self)
+
+    def reset(self):
+        self.head = None
 
 
+    
+    def search(self, value):
+        current = self.head
+        found = False
+        while current:
+            current.highlight = False  # ננקה קודם כל
+            if current.value == value:
+                current.highlight = True
+                found = True
+            current = current.next
+        return found
+
+# ----- Flask API Setup -----
 
 linked_list = LinkedList()
 
 @app_LinkedList.route('/insert', methods=['POST'])
 def insert():
-    global current_message,message_timer
     data = request.get_json()
-    num = int(data["key"])
-    if num and num >= 0:
-        linked_list.add(num)
-        current_message = f"The number {num} is added at the end of the list"
-        message_timer = pygame.time.get_ticks() + 2000
-        return jsonify({"message": f"{num} was inserted to LinkedList"}), 200
-    else:
-        return jsonify({"error": "need to insert positive number"}), 400
+    value = int(data.get('key'))
+    if value < 0:
+        return jsonify({"error": "Invalid input"}), 400
+    linked_list.add(value)
+    return jsonify({"message": f"{value} inserted successfully"}), 200
 
-@app_LinkedList.route('/delete',methods=['GET'])
+@app_LinkedList.route('/delete', methods=['GET'])
 def delete():
-    global current_message,message_timer
-    if linked_list.head is not None:
-        linked_list.remove_last()
-        current_message = "The last element in the list has been removed"
-        message_timer = pygame.time.get_ticks() + 2000
-        return jsonify({"message": "the last node was deleted from LinkedList"}), 200
-    else:
-        return jsonify({"error": "cant delete last node from empty linkedlist"}), 400
-    
+    linked_list.remove_last()
+    return jsonify({"message": "Last node deleted"}), 200
 
-@app_LinkedList.route('/search_node', methods=['POST'])
-def search_node():
-    data = request.get_json()
-    num = int(data["key"])
-    if num >= 0:
-        if linked_list.search_target is None:  
-            linked_list.search_target = num
-            threading.Thread(target=threaded_search(linked_list,num,lock), args=(num,), daemon=True).start()
-            return jsonify({"message": f"Searching for {num} in linked list..."}), 200
-        else:
-            return jsonify({"message": "Search already in progress"}), 202
-    else:
-        return jsonify({"error": f"Invalid value"}), 400
-
-@app_LinkedList.route('/reset', methods = ['GET'])
+@app_LinkedList.route('/reset', methods=['GET'])
 def reset():
-    global linked_list
-    linked_list = LinkedList()  
-    return jsonify({"message": "Linked list has been reset."}), 200
-    
+    linked_list.reset()
+    return jsonify({"message": "Linked list reset"}), 200
+
+@app_LinkedList.route('/data', methods=['GET'])
+def get_data():
+    return jsonify({"nodes": linked_list.to_list()}), 200
 
 
+@app_LinkedList.route('/search', methods=['POST'])
+def search():
+    data = request.get_json()
+    value = int(data.get('key'))
+    if value < 0:
+        return jsonify({"error": "Invalid input"}), 400
 
+    steps = []
+    current = linked_list.head
+    while current:
+        step = {
+            "value": current.value,
+            "x": current.x,
+            "y": current.y,
+            "status": "searching" if current.value != value else "found"
+        }
+        steps.append(step)
+        if current.value == value:
+            break
+        current = current.next
 
-    
-def get_output_frame():
+    if not steps or steps[-1]["value"] != value:
+        return jsonify({"steps": steps, "found": False}), 200
+    return jsonify({"steps": steps, "found": True}), 200
 
-    global output_frame
-    if output_frame is not None:
-        return output_frame.copy()
-    return None
-
-Video_Feed = VideoFeed(get_output_frame, lock)
-
-def render_linkedlist():
-    global lock, output_frame
-    running = True
-    while running:
-        if not linked_list.animating:
-            clear_screen()
-            update_positions(linked_list)
-            draw(linked_list, screen)
-            pygame.display.update()
-
-        if current_message and pygame.time.get_ticks() < message_timer:
-            display_message(screen,current_message,font,BLACK)
-
-        with lock:
-            output_frame = get_frame().copy()
-
-        pygame.time.wait(50)
-        clock.tick(20)
-
-
-
-
-@app_LinkedList.route('/video_feed_LinkedList')
-def video_feed_LinkedList():
-    return Video_Feed.response()
