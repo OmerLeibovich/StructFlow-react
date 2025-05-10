@@ -4,8 +4,6 @@ from flask_cors import CORS
 app_LinkedList = Flask(__name__)
 CORS(app_LinkedList)
 
-# ----- Node and LinkedList Classes -----
-
 class Node:
     def __init__(self, value, x, y):
         self.value = value
@@ -68,14 +66,13 @@ class LinkedList:
         current = self.head
         found = False
         while current:
-            current.highlight = False  # ננקה קודם כל
+            current.highlight = False  
             if current.value == value:
                 current.highlight = True
                 found = True
             current = current.next
         return found
 
-# ----- Flask API Setup -----
 
 linked_list = LinkedList()
 

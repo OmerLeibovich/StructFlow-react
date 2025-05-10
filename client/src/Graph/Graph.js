@@ -6,7 +6,9 @@ const Graph = () => {
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [dijkstraEdges, setDijkstraEdges] = useState([]);
+  const [logs, setLogs] = useState([]);
   const rightClickStartRef = useRef(null);
+  const inputRef = useRef(null);
 
   const [inputValue, setInputValue] = useState("");
   const [distances, setDistances] = useState([]);
@@ -15,7 +17,7 @@ const Graph = () => {
   const [showExplanation, setShowExplanation] = useState(false);
 
   const fetchGraphState = useCallback(async () => {
-    const response = await GRAPH_API.getGraphData(); // צריך להיות מוגדר ב-api שלך
+    const response = await GRAPH_API.getGraphData(); 
     setNodes(response.nodes || []);
     setEdges(response.edges || []);
     setDijkstraEdges(response.highlighted_edges || []);
@@ -40,42 +42,69 @@ const Graph = () => {
 
   const handleClick = async (e) => {
     if (e.button === 0) {
-      const { xRelative, yRelative } = getRelativeClick(e);
-      await GRAPH_API.getLeftMouseClick(xRelative, yRelative);
-      await GRAPH_API.resetRightClick();
-      fetchGraphState();
-      
-    }
-  };
-
-  const handleRightClick = async (e) => {
-    e.preventDefault();
-    if (e.button !== 2) return;
-
-    const { xRelative, yRelative } = getRelativeClick(e);
-    rightClickStartRef.current = { x: xRelative, y: yRelative };
-
-    const handleMouseUp = async (ev) => {
-      if (ev.button === 2 && rightClickStartRef.current) {
-        const { xRelative: xEnd, yRelative: yEnd } = getRelativeClick(ev);
-        await GRAPH_API.getRightMouseClick("start", [
-          {
-            x: Math.round(rightClickStartRef.current.x * 700),
-            y: Math.round(rightClickStartRef.current.y * 650),
-          },
-        ]);
-        await GRAPH_API.getRightMouseClick("end", {
-          x: Math.round(xEnd * 700),
-          y: Math.round(yEnd * 650),
-        });
+        const { xRelative, yRelative } = getRelativeClick(e);
+        const data = await GRAPH_API.getLeftMouseClick(xRelative, yRelative);
+        const newNodeNum = data.nodeNumber;
+        await GRAPH_API.resetRightClick();
         fetchGraphState();
-        rightClickStartRef.current = null;
-        document.removeEventListener("mouseup", handleMouseUp);
-      }
-    };
+        setLogs((prev) => [
+            ...prev,
+            <span key={prev.length}>
+                Created new <strong>node{newNodeNum}</strong>
+            </span>
+        ]);
+    }
+};
 
-    document.addEventListener("mouseup", handleMouseUp);
+
+const handleRightClick = async (e) => {
+  e.preventDefault();
+  if (e.button !== 2) return;
+
+  const { xRelative, yRelative } = getRelativeClick(e);
+  rightClickStartRef.current = { x: xRelative, y: yRelative };
+
+  const handleMouseUp = async (ev) => {
+      if (ev.button === 2 && rightClickStartRef.current) {
+          const { xRelative: xEnd, yRelative: yEnd } = getRelativeClick(ev);
+
+          const startRes = await GRAPH_API.getRightMouseClick("start", [
+              {
+                  x: Math.round(rightClickStartRef.current.x * 700),
+                  y: Math.round(rightClickStartRef.current.y * 650),
+              }
+          ]);
+
+          const startNumber = startRes?.nodeNumber ?? "?";
+          setLogs((prev) => [
+              ...prev,
+              <span key={prev.length}>
+                  Selected <strong>node {startNumber}</strong> as start point
+              </span>
+          ]);
+
+          const endRes = await GRAPH_API.getRightMouseClick("end", {
+              x: Math.round(xEnd * 700),
+              y: Math.round(yEnd * 650),
+          });
+
+          if (endRes?.status === "Edge added") {
+              setLogs((prev) => [
+                  ...prev,
+                  <span key={prev.length}>
+                      Connected <strong>node {endRes.startNumber}</strong> to <strong>node {endRes.endNumber}</strong>
+                  </span>
+              ]);
+          }
+
+          fetchGraphState();
+          rightClickStartRef.current = null;
+          document.removeEventListener("mouseup", handleMouseUp);
+      }
   };
+
+  document.addEventListener("mouseup", handleMouseUp);
+};
 
   const Random_distances = async () => {
     setInputValue("");
@@ -86,6 +115,7 @@ const Graph = () => {
     } else {
       alert(result.error);
     }
+    inputRef.current?.focus();
   };
   
   const Dijkstra_Start = async () => {
@@ -115,6 +145,7 @@ const Graph = () => {
     } catch (error) {
       console.error("Error calling Dijkstra API:", error);
     }
+    inputRef.current?.focus();
   };
 
   const resetGraph = async () => {
@@ -134,6 +165,7 @@ const Graph = () => {
   return (
     <div className="App">
       <input
+        ref={inputRef}
         type="text"
         placeholder="Insert number"
         value={inputValue}
@@ -176,7 +208,6 @@ const Graph = () => {
             pointerEvents: "all",
           }}
         >
-          {/* Edges */}
           {edges.map(([start, end, weight], index) => {
             const midX = (start[0] + end[0]) / 2;
             const midY = (start[1] + end[1]) / 2;
@@ -205,8 +236,6 @@ const Graph = () => {
               </g>
             );
           })}
-
-          {/* Nodes */}
           {nodes.map(([x, y, num], index) => (
             <g key={index}>
               <circle cx={x} cy={y} r={25} fill="#ADD8E6" stroke="black" strokeWidth={2} />
@@ -223,8 +252,16 @@ const Graph = () => {
             </g>
           ))}
         </svg>
-
-
+                {logs.length > 0 && (
+          <div className="logPanel">
+            <div className="logTitle">Logs</div>
+            <div className="logScroll">
+              {logs.map((log, index) => (
+                <div key={index}>{log}</div>
+              ))}
+            </div>
+          </div>
+        )}
         <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
           Explanation
         </button>

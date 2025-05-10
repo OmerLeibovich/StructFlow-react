@@ -105,9 +105,10 @@ def left_mouse_click():
         if distance < MIN_DISTANCE:
             return jsonify({"message": "Too close to existing node"}), 200
 
-    graph.nodes.append((abs_x, abs_y, count))
+    returned_number = count
+    graph.nodes.append((abs_x, abs_y, count)) 
     count += 1
-    return jsonify({"x": abs_x, "y": abs_y})
+    return jsonify({"x": abs_x, "y": abs_y, "nodeNumber":returned_number})
 
 
 @app_graph.route('/right_mouse_click', methods=['POST'])
@@ -124,7 +125,13 @@ def right_mouse_click():
 
     if phase == "start":
         current_line_start = points[0]
-        return jsonify({"status": "Start received"}), 200
+        start_node = find_node_at_point(current_line_start)
+        node_number = None
+        for node in graph.nodes:
+            if node[0] == start_node[0] and node[1] == start_node[1]:
+                node_number = node[-1]
+                break
+        return jsonify({"status": "Start received", "nodeNumber": node_number}), 200
 
     elif phase == "end":
         end_point = points[0]
@@ -145,9 +152,17 @@ def right_mouse_click():
 
         if not exists:
             graph.edges.append((start_node, end_node))
-            return jsonify({"status": "Edge added"}), 200
-        else:
-            return jsonify({"message": "Edge already exists"}), 200
+            
+            start_number = None
+            end_number = None
+            for node in graph.nodes:
+                if node[0] == start_node[0] and node[1] == start_node[1]:
+                    start_number = node[-1]
+                if node[0] == end_node[0] and node[1] == end_node[1]:
+                    end_number = node[-1]
+            
+            return jsonify({"status": "Edge added", "startNumber": start_number, "endNumber": end_number}), 200
+
 
     return jsonify({"error": "Invalid phase"}), 400
 
