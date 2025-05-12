@@ -152,7 +152,6 @@ def right_mouse_click():
 
         if not exists:
             graph.edges.append((start_node, end_node))
-            
             start_number = None
             end_number = None
             for node in graph.nodes:

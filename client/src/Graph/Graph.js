@@ -7,7 +7,8 @@ const Graph = () => {
   const [edges, setEdges] = useState([]);
   const [dijkstraEdges, setDijkstraEdges] = useState([]);
   const [logs, setLogs] = useState([]);
-  const rightClickStartRef = useRef(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [selectedStartNode,setSelectedStartNode] = useState(null)
   const inputRef = useRef(null);
 
   const [inputValue, setInputValue] = useState("");
@@ -23,14 +24,6 @@ const Graph = () => {
     setDijkstraEdges(response.highlighted_edges || []);
   }, []);
 
-  const getRelativeClick = (e) => {
-    const svgElement = document.querySelector("svg"); 
-    const rect = svgElement.getBoundingClientRect();
-    const x = (e.clientX - rect.left);
-    const y = (e.clientY - rect.top);
-    return { xRelative: x / 700, yRelative: y / 650 };
-  };
-  
 
   const isDijkstraEdge = (start, end) => {
     return dijkstraEdges.some(
@@ -57,54 +50,68 @@ const Graph = () => {
 };
 
 
-const handleRightClick = async (e) => {
-  e.preventDefault();
-  if (e.button !== 2) return;
-
-  const { xRelative, yRelative } = getRelativeClick(e);
-  rightClickStartRef.current = { x: xRelative, y: yRelative };
-
-  const handleMouseUp = async (ev) => {
-      if (ev.button === 2 && rightClickStartRef.current) {
-          const { xRelative: xEnd, yRelative: yEnd } = getRelativeClick(ev);
-
-          const startRes = await GRAPH_API.getRightMouseClick("start", [
-              {
-                  x: Math.round(rightClickStartRef.current.x * 700),
-                  y: Math.round(rightClickStartRef.current.y * 650),
-              }
-          ]);
-
-          const startNumber = startRes?.nodeNumber ?? "?";
-          setLogs((prev) => [
-              ...prev,
-              <span key={prev.length}>
-                  Selected <strong>node {startNumber}</strong> as start point
-              </span>
-          ]);
-
-          const endRes = await GRAPH_API.getRightMouseClick("end", {
-              x: Math.round(xEnd * 700),
-              y: Math.round(yEnd * 650),
-          });
-
-          if (endRes?.status === "Edge added") {
-              setLogs((prev) => [
-                  ...prev,
-                  <span key={prev.length}>
-                      Connected <strong>node {endRes.startNumber}</strong> to <strong>node {endRes.endNumber}</strong>
-                  </span>
-              ]);
-          }
-
-          fetchGraphState();
-          rightClickStartRef.current = null;
-          document.removeEventListener("mouseup", handleMouseUp);
-      }
-  };
-
-  document.addEventListener("mouseup", handleMouseUp);
+const getRelativeClick = (e) => {
+    return {
+        xRelative: e.nativeEvent.offsetX / 700,
+        yRelative: e.nativeEvent.offsetY / 650
+    };
 };
+
+const handleRightClick = async (e) => {
+    e.preventDefault();
+    if (e.button !== 2) return;
+    if (isConnecting) return;
+
+    const { xRelative, yRelative } = getRelativeClick(e);
+    const point = {
+        x: Math.round(xRelative * 700),
+        y: Math.round(yRelative * 650)
+    };
+
+    if (!selectedStartNode) {
+        setIsConnecting(true);
+        try {
+            const start = await GRAPH_API.getRightMouseClick("start", [point]); 
+            setSelectedStartNode(point); 
+            setLogs((prev) => [
+                ...prev,
+                <span key={prev.length}>
+                    Selected <strong>node {start.nodeNumber}</strong> as start point
+                </span>
+            ]);
+        } finally {
+            setIsConnecting(false);
+        }
+    } else {
+       
+        const threshold = 10;
+        if (Math.abs(selectedStartNode.x - point.x) < threshold &&
+            Math.abs(selectedStartNode.y - point.y) < threshold) {
+            return;
+        }
+
+        setIsConnecting(true);
+        try {
+            const res = await GRAPH_API.getRightMouseClick("end", point);
+            if (res?.status === "Edge added") {
+                setLogs((prev) => [
+                    ...prev,
+                    <span key={prev.length}>
+                        Connected <strong>node {res.startNumber}</strong> to <strong>node {res.endNumber}</strong>
+                    </span>
+                ]);
+            }
+            await fetchGraphState();
+        } catch (error) {
+            console.error("Error connecting nodes:", error);
+        } finally {
+            setSelectedStartNode(null);
+            setIsConnecting(false);
+        }
+    }
+};
+
+
 
   const Random_distances = async () => {
     setInputValue("");
