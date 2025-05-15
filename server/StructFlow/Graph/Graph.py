@@ -5,10 +5,6 @@ import random
 app_graph = Flask(__name__)
 CORS(app_graph)
 
-# קבועים
-CIRCLE_RADIUS = 25
-MIN_DISTANCE = 50
-
 current_line_start = None
 linesDistance = []
 count = 1
@@ -63,7 +59,7 @@ def find_node_at_point(point):
     for circle in graph.nodes:
         cx, cy = circle[:2]
         distance = ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
-        if distance <= CIRCLE_RADIUS:
+        if distance <= 25:
             return (cx, cy)  
     return None
 
@@ -73,13 +69,13 @@ def find_node_at_point(point):
 
 graph = Graph()
 
-
 @app_graph.route("/graph_data", methods=["GET"])
 def get_graph_data():
     return jsonify({
         "nodes": graph.nodes,
         "edges": graph.edges,
-        "highlighted_edges": dijkstra_path_edges
+        "highlighted_edges": dijkstra_path_edges,
+        "linesDistance": linesDistance  
     }), 200
 
 
@@ -102,7 +98,7 @@ def left_mouse_click():
     for circle in graph.nodes:
         cx, cy = circle[:2]
         distance = ((abs_x - cx) ** 2 + (abs_y - cy) ** 2) ** 0.5
-        if distance < MIN_DISTANCE:
+        if distance < 50:
             return jsonify({"message": "Too close to existing node"}), 200
 
     returned_number = count
@@ -172,8 +168,14 @@ def randomize_weights():
     linesDistance.clear()
 
     new_edges = []
-    for (n1, n2) in graph.edges:
-        weight = random.randint(1, 20)
+    for edge in graph.edges:
+        if len(edge) == 2:
+            n1, n2 = edge
+        elif len(edge) == 3:
+            n1, n2, _ = edge
+        else:
+            continue
+        weight = random.randint(1, 100)
         new_edges.append((n1, n2, weight))
         linesDistance.append(weight)
     

@@ -4,6 +4,8 @@ import { Button, Modal } from "react-bootstrap";
 import { LINKED_LIST_API } from "../api";
 
 const LinkedList = () => {
+
+  //initialize variables
   const [inputValue, setInputValue] = useState("");
   const [showExplanation, setShowExplanation] = useState(false);
   const [nodesData, setNodesData] = useState([]);
@@ -11,14 +13,16 @@ const LinkedList = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const inputRef = useRef(null);
   
-
+  //  useEffect hook to automatically scroll the logs panel to the bottom
+  // whenever the logs state changes. This ensures the latest log message
+  // is always visible to the user.
   useEffect(() => {
     const scrollBox = document.querySelector(".logScroll");
     if (scrollBox) scrollBox.scrollTop = scrollBox.scrollHeight;
   }, [logs]);
   
 
-
+  //  Fetches the current linked list data from the backend and updates the state with the nodes.
   const fetchLinkedListData = async () => {
     try {
       const res = await LINKED_LIST_API.getLinkedList();
@@ -28,17 +32,19 @@ const LinkedList = () => {
       setNodesData([]);
     }
   };
-  
+  // Load linked list data when component mounts
   useEffect(() => {
     fetchLinkedListData(); 
   }, []);
   
-
+  // Handles insertion of a new number into the linked list.
+  //  Validates input, sends to backend, and updates the UI.
   const handleInsert = async () => {
     if (!inputValue) return alert("Error: Please enter a number!");
   
     const numValue = parseInt(inputValue, 10);
     setInputValue("");
+    // Validate number range
     if (isNaN(numValue) || numValue < 0 || numValue > 999) {
       return alert("Error: Number must be between 0 and 999!");
     }
@@ -50,15 +56,15 @@ const LinkedList = () => {
       await fetchLinkedListData();
       setLogs((prev) => [...prev, 
       <span key={prev.length}>
-      The number  <strong style={{ color: "green" }}>{numValue}</strong> inserted to the linkedList
+      The number  <strong style={{ color: "green" }}>{numValue}</strong> inserted to the linkedList.
       </span>
       ]);
     }
     inputRef.current?.focus();
   };
-  
+  //Handles deletion of the last (tail) node from the linked list.
   const handleDelete = async () => {
-    if (isDeleting) return; 
+    if (isDeleting) return; // Prevent double deletion with double click
     setIsDeleting(true);
 
     setInputValue("");
@@ -78,7 +84,8 @@ const LinkedList = () => {
     }
     setIsDeleting(false)
   };
-  
+  //  Handles search of a number in the linked list. 
+  // Animates search steps by updating node states.
   const handleSearch = async () => {
     if (!inputValue) return alert("Please enter a number!");
     const numValue = parseInt(inputValue, 10);
@@ -95,6 +102,7 @@ const LinkedList = () => {
     const steps = result.steps || [];
   
     let i = 0;
+    // Animate each step with delay
     const animate = () => {
       if (i < steps.length) {
         const tempNodes = [...nodesData].map((node) => {
@@ -109,7 +117,7 @@ const LinkedList = () => {
         });
         setNodesData(tempNodes);
         i++;
-        setTimeout(animate, 500);
+        setTimeout(animate, 500);// delay between steps
       }
       else {
         const found = steps.some(step => step.status === "found");
@@ -130,7 +138,7 @@ const LinkedList = () => {
     inputRef.current?.focus();
   };
   
-  
+  //Resets the entire linked list and clears logs.
   const handleReset = async () => {
     setInputValue("");
     const result = await LINKED_LIST_API.resetLinkedList();
@@ -142,7 +150,8 @@ const LinkedList = () => {
     }
   };
   
-
+      //Main component render.
+    // Displays controls, SVG visualization, and logs panel.
   return (
     <div className="App">
       <input
@@ -240,25 +249,31 @@ const LinkedList = () => {
             </g>
           ))}
         </svg>
+        {/* Tutorial modal button */}
         <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
           Explanation
         </button>
       </div>
+      {/* Reset button */}
       <div className="resetButtonBackground">
         <button onClick={handleReset} className="resetButton">
           Reset
         </button>
       </div>
+       {/* Log panel */}
       {logs.length > 0 && (
-  <div className="logPanel">
+    <div className="logPanel">
     <div className="logTitle">Logs</div>
     <div className="logScroll">
       {logs.map((log, index) => (
-        <div key={index}>{log}</div>
+        <div key={index}>
+        {log}
+        </div>
       ))}
     </div>
-  </div>
-)}
+    </div>
+      )}    
+      {/* Explanation modal */}
       <Modal show={showExplanation} onHide={() => setShowExplanation(false)}>
         <Modal.Header closeButton>
           <Modal.Title>LinkedList Tutorial</Modal.Title>

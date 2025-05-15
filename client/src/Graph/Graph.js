@@ -3,6 +3,7 @@ import { GRAPH_API } from "../api";
 import { Button, Modal } from "react-bootstrap";
 
 const Graph = () => {
+  //initialize variables
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [dijkstraEdges, setDijkstraEdges] = useState([]);
@@ -16,15 +17,25 @@ const Graph = () => {
   const [data, setData] = useState({});
   const [showTable, setShowTable] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  
+   //  useEffect hook to automatically scroll the logs panel to the bottom
+  // whenever the logs state changes. This ensures the latest log message
+  // is always visible to the user.
+    useEffect(() => {
+      const scrollBox = document.querySelector(".logScroll");
+      if (scrollBox) scrollBox.scrollTop = scrollBox.scrollHeight;
+    }, [logs]);
 
+  //Fetches the current graph state from the backend.
   const fetchGraphState = useCallback(async () => {
     const response = await GRAPH_API.getGraphData(); 
     setNodes(response.nodes || []);
     setEdges(response.edges || []);
     setDijkstraEdges(response.highlighted_edges || []);
+    setDistances(response.linesDistance || []);
   }, []);
 
-
+  //Checks if an edge is part of the highlighted Dijkstra path.
   const isDijkstraEdge = (start, end) => {
     return dijkstraEdges.some(
       ([s, e]) =>
@@ -32,7 +43,7 @@ const Graph = () => {
         (s[0] === end[0] && s[1] === end[1] && e[0] === start[0] && e[1] === start[1])
     );
   };
-
+  //Handles left mouse click: adds a new node to the graph
   const handleClick = async (e) => {
     if (e.button === 0) {
         const { xRelative, yRelative } = getRelativeClick(e);
@@ -49,14 +60,16 @@ const Graph = () => {
     }
 };
 
-
+//Converts mouse event coordinates to relative values for the backend.
 const getRelativeClick = (e) => {
     return {
         xRelative: e.nativeEvent.offsetX / 700,
         yRelative: e.nativeEvent.offsetY / 650
     };
 };
-
+//Handles right mouse click: 
+//First click selects a node (start)
+//Second click connects to another node (end)
 const handleRightClick = async (e) => {
     e.preventDefault();
     if (e.button !== 2) return;
@@ -83,7 +96,7 @@ const handleRightClick = async (e) => {
             setIsConnecting(false);
         }
     } else {
-       
+       // Prevent connecting to same point
         const threshold = 10;
         if (Math.abs(selectedStartNode.x - point.x) < threshold &&
             Math.abs(selectedStartNode.y - point.y) < threshold) {
@@ -112,7 +125,7 @@ const handleRightClick = async (e) => {
 };
 
 
-
+ //Assigns random distances (weights) to edges.
   const Random_distances = async () => {
     setInputValue("");
     const result = await GRAPH_API.getLinesDistance();
@@ -124,7 +137,8 @@ const handleRightClick = async (e) => {
     }
     inputRef.current?.focus();
   };
-  
+  //Starts Dijkstra's algorithm from the selected node.
+  //Displays distances table.
   const Dijkstra_Start = async () => {
     if (!inputValue) return alert("Please enter a number!");
     const parsedValue = parseInt(inputValue, 10);
@@ -154,23 +168,32 @@ const handleRightClick = async (e) => {
     }
     inputRef.current?.focus();
   };
-
+  //Resets the entire graph and clears data.
   const resetGraph = async () => {
     setNodes([]);
     setEdges([]);
     setInputValue("");
     setData({});
     setShowTable(false);
+    setLogs([]);
     await GRAPH_API.resetGraph();
     fetchGraphState();
   };
-
+  // On initial component mount, reset the graph on the server 
+  // and then fetch the (now empty) graph state.
+  // Adding fetchGraphState as a dependency satisfies eslint 
+  // and ensures proper function reference.
   useEffect(() => {
-    fetchGraphState();
-  }, [fetchGraphState]);
+    const resetAndFetch = async () => {
+        await GRAPH_API.resetGraph();
+        fetchGraphState();
+    };
+    resetAndFetch();
+}, [fetchGraphState]);
 
   return (
     <div className="App">
+    {/* Input field */}
       <input
         ref={inputRef}
         type="text"
@@ -178,11 +201,12 @@ const handleRightClick = async (e) => {
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value.replace(/\D/g, ""))}
       />
+      {/* Control buttons */}
       <button onClick={Dijkstra_Start}>Pick a node</button>
       <button onClick={Random_distances}>Random</button>
 
       <h3>Distances: {distances.join(", ")}</h3>
-
+      {/* Display table of distances if available */}
       <div>
         {showTable && (
           <div className="TableWrapper">
@@ -200,8 +224,8 @@ const handleRightClick = async (e) => {
             </table>
           </div>
         )}
-
-                <svg
+          {/* SVG graph rendering */}
+          <svg
           width={700}
           height={650}
           onMouseDown={handleClick}
@@ -215,6 +239,7 @@ const handleRightClick = async (e) => {
             pointerEvents: "all",
           }}
         >
+        {/* Render edges */}
           {edges.map(([start, end, weight], index) => {
             const midX = (start[0] + end[0]) / 2;
             const midY = (start[1] + end[1]) / 2;
@@ -243,6 +268,7 @@ const handleRightClick = async (e) => {
               </g>
             );
           })}
+          {/* Render nodes */}
           {nodes.map(([x, y, num], index) => (
             <g key={index}>
               <circle cx={x} cy={y} r={25} fill="#ADD8E6" stroke="black" strokeWidth={2} />
@@ -259,6 +285,7 @@ const handleRightClick = async (e) => {
             </g>
           ))}
         </svg>
+         {/* Logs panel */}
                 {logs.length > 0 && (
           <div className="logPanel">
             <div className="logTitle">Logs</div>
@@ -269,17 +296,18 @@ const handleRightClick = async (e) => {
             </div>
           </div>
         )}
+        {/* Tutorial modal button */}
         <button className="Explanation_Button" onClick={() => setShowExplanation(true)}>
           Explanation
         </button>
-
+        {/* Explanation modal */}
         <div className="resetButtonBackground">
           <button onClick={resetGraph} className="resetButton">
             Reset
           </button>
         </div>
       </div>
-
+        {/* Explanation modal */}
       <Modal show={showExplanation} onHide={() => setShowExplanation(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Graph Tutorial</Modal.Title>
