@@ -75,13 +75,11 @@ def run_linkedlist_server():
 
 
 def run_double_linkedlist_server():
-    from StructFlow.Structures.DoubleLinkedList import app_Double_LinkedList,render_Double_linkedlist
-    threading.Thread(target=render_Double_linkedlist, daemon=True).start()
+    from StructFlow.Structures.DoubleLinkedList import app_Double_LinkedList
     app_Double_LinkedList.run(host="0.0.0.0", port = 5003 , debug = False ,  threaded=True)
 
 def run_array():
-    from StructFlow.Structures.Array import app_Array,render_Array
-    threading.Thread(target=render_Array, daemon=True).start()
+    from StructFlow.Structures.Array import app_Array
     app_Array.run(host="0.0.0.0", port = 5004 , debug = False ,  threaded=True)
 
 

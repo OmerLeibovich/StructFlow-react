@@ -27,13 +27,17 @@ const Graph = () => {
     }, [logs]);
 
   //Fetches the current graph state from the backend.
-  const fetchGraphState = useCallback(async () => {
-    const response = await GRAPH_API.getGraphData(); 
+const fetchGraphState = useCallback(async () => {
+  try {
+    const response = await GRAPH_API.getGraphData();
     setNodes(response.nodes || []);
     setEdges(response.edges || []);
     setDijkstraEdges(response.highlighted_edges || []);
     setDistances(response.linesDistance || []);
-  }, []);
+  } catch (error) {
+    console.error("Failed to fetch graph state:", error);
+  }
+}, []);
 
   //Checks if an edge is part of the highlighted Dijkstra path.
   const isDijkstraEdge = (start, end) => {
@@ -47,10 +51,10 @@ const Graph = () => {
   const handleClick = async (e) => {
     if (e.button === 0) {
         const { xRelative, yRelative } = getRelativeClick(e);
+      try{
         const data = await GRAPH_API.getLeftMouseClick(xRelative, yRelative);
         const newNodeNum = data.nodeNumber;
         await GRAPH_API.resetRightClick();
-        fetchGraphState();
         setLogs((prev) => [
             ...prev,
             <span key={prev.length}>
@@ -58,6 +62,14 @@ const Graph = () => {
             </span>
         ]);
     }
+    catch (error) {
+    console.error("Failed to create node:", error);
+    alert("Failed to create node. Please try again.");
+    }
+    finally{
+      fetchGraphState();
+    }
+  }
 };
 
 //Converts mouse event coordinates to relative values for the backend.
@@ -92,7 +104,11 @@ const handleRightClick = async (e) => {
                     Selected <strong>node {start.nodeNumber}</strong> as start point
                 </span>
             ]);
-        } finally {
+        } catch (error) {
+          console.error("Failed to select start node:", error);
+          alert("Failed to select start node. Please try again.");
+          }
+          finally {
             setIsConnecting(false);
         }
     } else {
@@ -114,10 +130,10 @@ const handleRightClick = async (e) => {
                     </span>
                 ]);
             }
-            await fetchGraphState();
         } catch (error) {
             console.error("Error connecting nodes:", error);
         } finally {
+          fetchGraphState();
             setSelectedStartNode(null);
             setIsConnecting(false);
         }
@@ -128,14 +144,18 @@ const handleRightClick = async (e) => {
  //Assigns random distances (weights) to edges.
   const Random_distances = async () => {
     setInputValue("");
+    try{
     const result = await GRAPH_API.getLinesDistance();
-    if (!result.error) {
       setDistances(result.LinesDis);
-      fetchGraphState();
-    } else {
-      alert(result.error);
     }
+    catch (error) {
+    console.error("Failed to assign random distances:", error);
+    alert("An error occurred while assigning random distances.");
+  }
+  finally{
+    fetchGraphState();
     inputRef.current?.focus();
+  }
   };
   //Starts Dijkstra's algorithm from the selected node.
   //Displays distances table.
@@ -146,7 +166,6 @@ const handleRightClick = async (e) => {
 
     try {
       const response = await GRAPH_API.getDijkstraAlgo(parsedValue);
-      if (!response) return;
 
       const distanceKey = response.Key_Distances;
 
@@ -164,32 +183,48 @@ const handleRightClick = async (e) => {
       fetchGraphState();
 
     } catch (error) {
-      console.error("Error calling Dijkstra API:", error);
-    }
+  console.error("Error calling Dijkstra API:", error);
+  alert("Failed to run Dijkstra's algorithm. Please try again.");
+}
     inputRef.current?.focus();
   };
   //Resets the entire graph and clears data.
   const resetGraph = async () => {
-    setNodes([]);
-    setEdges([]);
-    setInputValue("");
-    setData({});
-    setShowTable(false);
-    setLogs([]);
+  setNodes([]);
+  setEdges([]);
+  setInputValue("");
+  setData({});
+  setShowTable(false);
+  setLogs([]);
+
+  try {
     await GRAPH_API.resetGraph();
+  } catch (error) {
+    console.error("Failed to reset graph:", error);
+    alert("An error occurred while resetting the graph.");
+  }
+  finally{
     fetchGraphState();
-  };
+  }
+};
   // On initial component mount, reset the graph on the server 
   // and then fetch the (now empty) graph state.
   // Adding fetchGraphState as a dependency satisfies eslint 
   // and ensures proper function reference.
-  useEffect(() => {
-    const resetAndFetch = async () => {
-        await GRAPH_API.resetGraph();
-        fetchGraphState();
-    };
-    resetAndFetch();
+useEffect(() => {
+  const resetAndFetch = async () => {
+    try {
+      await GRAPH_API.resetGraph();
+      fetchGraphState();
+    } catch (error) {
+      console.error("Error during initial graph reset:", error);
+      alert("Failed to initialize graph. Please refresh the page.");
+    }
+  };
+
+  resetAndFetch();
 }, [fetchGraphState]);
+
 
   return (
     <div className="App">

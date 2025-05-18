@@ -1,25 +1,24 @@
-import time
-from StructFlow.Screen import *
-from StructFlow.Structures.ArrayFunc import *
-from StructFlow.DisplayMessage import *
-
 def bubble_sort(array):
+    steps = []
     n = len(array)
+    arr_copy = array.copy()
+    
     for i in range(n):
         for j in range(n - i - 1):
-            clear_screen()
-            draw_array(array, highlight_indices=[j, j + 1])
-            update_screen()
-            time.sleep(1)
+            step = {
+                "array": arr_copy.copy(),
+                "highlight": [j, j + 1],
+                "swapped": False
+            }
 
-            if array[j] > array[j + 1]:
-                array[j], array[j + 1] = array[j + 1], array[j]
-                clear_screen()
-                draw_array(array, highlight_indices=[j, j + 1])
-                display_message(screen,f"{array[j]} is lower than {array[j + 1]}, replace them",font,BLACK)
-                update_screen()
-                time.sleep(1)
+            if arr_copy[j] > arr_copy[j + 1]:
+                arr_copy[j], arr_copy[j + 1] = arr_copy[j + 1], arr_copy[j]
+                step["array"] = arr_copy.copy()
+                step["swapped"] = True
 
-    clear_screen()
-    draw_array(array)
-    update_screen()
+            steps.append(step)
+
+    return {
+        "steps": steps,
+        "sorted_array": arr_copy 
+    }

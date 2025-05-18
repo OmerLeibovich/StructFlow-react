@@ -23,6 +23,12 @@ const AVLTreeVisualizer = () => {
   }, [logs]);
   
 
+const containsValue = (tree, target) => {
+  if (!tree) return false;
+  if (tree.name === target) return true;
+  return containsValue(tree.left, target) || containsValue(tree.right, target);
+};
+
   //Fetch the current AVL tree from the backend.
   const fetchTree = async () => {
     const res = await TREE_API.getTree();
@@ -31,31 +37,46 @@ const AVLTreeVisualizer = () => {
   //Inserts a new node into the AVL tree.
   //  Prevents insert during BFS/DFS mode.
   const handleInsert = async () => {
-    const num = parseInt(inputValue);
-    if (isNaN(num)) {
-      alert("Please enter a valid number");
-      return;
-    }
-    if (bfsMode || dfsMode){
-      alert("You cant insert when bfs or dfs activate");
-      return;
-    }
-    if (num<0 || num>99999){
-      setInputValue(""); 
-      alert("Please enter a number between 1 and 100,000");
-      return;
-    }
-    await TREE_API.insertNode(num);
-    setLogs((prev) => [...prev, 
-      <span key={prev.length}>
-      The number  <strong style={{ color: "green" }}>{num}</strong> inserted to the tree.
-      </span>
-      ]);
-    setInputValue("");      
-    fetchTree();  
+  const num = parseInt(inputValue);
+  if (isNaN(num)) {
+    alert("Please enter a valid number");
+    return;
+  }
+  if (bfsMode || dfsMode) {
+    alert("You can't insert when BFS or DFS is active");
+    return;
+  }
+  if (num < 0 || num > 99999) {
+    setInputValue(""); 
+    alert("Please enter a number between 1 and 100,000");
+    return;
+  }
+   if (containsValue(treeData, num)) {
+    alert(`Node ${num} already exists in the tree.`);
+    setInputValue(""); 
     inputRef.current?.focus();
+    return;
+  }
 
-  };
+  try {
+    await TREE_API.insertNode(num);
+    setLogs((prev) => [
+      ...prev,
+      <span key={prev.length}>
+        The number <strong style={{ color: "green" }}>{num}</strong> inserted to the tree.
+      </span>
+    ]);
+    console.log(`The number ${num} inserted to the tree`);
+  } catch (error) {
+    console.error(`Failed to insert ${num}:`, error);
+    alert(`Failed to insert ${num} to the tree.`);
+  }
+  finally{
+    fetchTree();
+    setInputValue("");      
+    inputRef.current?.focus();
+  }
+};
   //Deletes a node from the AVL tree.
   // Prevents delete during BFS/DFS mode.
   const handleDelete = async () => {
@@ -68,65 +89,105 @@ const AVLTreeVisualizer = () => {
       alert("You cant delete when bfs or dfs activate");
       return;
     }
-    await TREE_API.deleteNode(num);
-    setLogs((prev) => [...prev, 
-      <span key={prev.length}>
-      The number  <strong style={{ color: "red" }}>{num}</strong> removed from the tree.
-      </span>
-      ]);
-    setInputValue("");
-    fetchTree();
+     if (!containsValue(treeData, num)) {
+      alert(`Node ${num} doesn't exist in the tree.`);
+       setInputValue(""); 
     inputRef.current?.focus();
+      return;
+    }
 
+     try {
+    await TREE_API.deleteNode(num);
+    setLogs((prev) => [
+      ...prev,
+      <span key={prev.length}>
+        The number <strong style={{ color: "red" }}>{num}</strong> removed from the tree.
+      </span>
+    ]);
+    console.log(`The number ${num} removed from the tree`)
+  } catch (error) {
+    console.error(`Failed to delete ${num}:`, error);
+    alert(`Failed to delete ${num} from the tree.`);
+  }
+  finally{
+    fetchTree();
+    setInputValue("");
+    inputRef.current?.focus();
+  }
   };
   //Runs BFS traversal on the AVL tree.
   // Highlights nodes during traversal.
   const handleBFS = async () => {
-    if (dfsMode){
-      alert("You cant use bfs when dfs activate");
-      return;
-    }
+  if (dfsMode) {
+    alert("You can't use BFS when DFS is active");
+    return;
+  }
+
+  try {
     const res = await TREE_API.startBFS();
     setResetMode("ResetBFS");
+
     if (res.highlighted_nodes) {
       const LastSet = HighlightsNodes.length;
       const newVisited = res.highlighted_nodes.slice(LastSet);
       setHighlightsNodes(res.highlighted_nodes);
-       if (newVisited.length > 0) {
-          const label = newVisited.length === 1 ? "node" : "nodes";
-          setLogs((prev) => [...prev, 
-              <span key={prev.length}>
-                  BFS added {label}: <strong style={{ color: "blue" }}>{newVisited.join(", ")}</strong>.
-              </span>
-          ]);
+
+      if (newVisited.length > 0) {
+        const label = newVisited.length === 1 ? "node" : "nodes";
+
+        setLogs((prev) => [
+          ...prev,
+          <span key={prev.length}>
+            BFS added {label}: <strong style={{ color: "blue" }}>{newVisited.join(", ")}</strong>.
+          </span>
+        ]);
+
+        console.log(`BFS added ${label}: ${newVisited.join(", ")}`);
       }
+
       setBfsMode(true);
     }
-    
-  };
+  } catch (error) {
+    console.error("BFS failed:", error);
+    alert("BFS traversal failed. Please try again.");
+  }
+};
+
   //Runs DFS traversal on the AVL tree.
   // Highlights nodes during traversal.
   const handleDFS = async () => {
-    if (bfsMode){
-      alert("You cant use dfs when bfs activate");
-      return;
-    }
+  if (bfsMode) {
+    alert("You can't use DFS when BFS is active");
+    return;
+  }
+
+  try {
     const res = await TREE_API.startDFS();
     setResetMode("ResetDFS");
+
     if (res.DFS_Targets) {
       setHighlightsNodes(res.DFS_Targets);
-      const lastNode = res.DFS_Targets?.[res.DFS_Targets.length - 1];
-      setLogs((prev) => [...prev, 
-      <span key={prev.length}>
+      const lastNode = res.DFS_Targets[res.DFS_Targets.length - 1];
+
+      setLogs((prev) => [
+        ...prev,
+        <span key={prev.length}>
           DFS added node: <strong style={{ color: "blue" }}>{lastNode}</strong>
-      </span>
+        </span>
       ]);
+
+      console.log(`DFS added node: ${lastNode}`);
       setDfsMode(true);
     }
-    
-  };
+  } catch (error) {
+    console.error("DFS failed:", error);
+    alert("DFS traversal failed. Please try again.");
+  }
+};
+
   //Resets the AVL tree or traversal states depending on current mode.
-  const handleReset = async () => {
+const handleReset = async () => {
+  try {
     if (resetMode === "Reset") {
       await TREE_API.resetTree();
       setTreeData(null);
@@ -138,10 +199,16 @@ const AVLTreeVisualizer = () => {
       await TREE_API.resetDFS();
       setDfsMode(false);
     }
+
     fetchTree();
     setResetMode("Reset");
     setHighlightsNodes(null);
-  };
+  } catch (error) {
+    console.error("Reset failed:", error);
+    alert(`Reset operation (${resetMode}) failed. Please try again.`);
+  }
+};
+
   
   
   

@@ -1,15 +1,9 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from StructFlow.Node import Node
 
 app_LinkedList = Flask(__name__)
 CORS(app_LinkedList)
-
-class Node:
-    def __init__(self, value, x, y):
-        self.value = value
-        self.x = x
-        self.y = y
-        self.next = None
 
 class LinkedList:
     def __init__(self):
@@ -17,7 +11,7 @@ class LinkedList:
         self.spacing_x = 100
         self.spacing_y = 80
         self.node_radius = 25
-        self.screen_width = 700
+        self.screen_width = 1000
         self.screen_height = 600
 
     def to_list(self):
@@ -92,7 +86,8 @@ def delete():
 
 @app_LinkedList.route('/reset', methods=['GET'])
 def reset():
-    linked_list.reset()
+    global linked_list
+    linked_list = LinkedList()
     return jsonify({"message": "Linked list reset"}), 200
 
 @app_LinkedList.route('/data', methods=['GET'])

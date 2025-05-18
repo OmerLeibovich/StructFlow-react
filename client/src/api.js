@@ -55,7 +55,7 @@ export const LINKED_LIST_API = {
   resetLinkedList:() => sendRequest(config_LINKEDLIST.apiUrl,"/reset")
 }
 export const DOUBLE_LINKED_LIST_API ={
-  getVideoStreamDoubleLinkedList: () => `${config_DOUBLELINKEDLIST.apiUrl}/video_feed_Double_LinkedList?t=${Date.now()}`,
+  getDoubleLinkedList: () => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/data"),
   insertDoubleLinkedList:(key,side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/insert_doubleLinkedList","POST",{ key,side }),
   deleteDoubleLinkedList:(side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/delete_doubleLinkedList","POST",{ side }),
   searchDoubleLinkedList:(key,side) => sendRequest(config_DOUBLELINKEDLIST.apiUrl,"/search_node","POST",{key,side}),
@@ -63,7 +63,7 @@ export const DOUBLE_LINKED_LIST_API ={
 }
 
 export const ARRAY_API ={
-  getVideoStreamArray: () => `${config_ARRAY.apiUrl}/video_feed_Array?t=${Date.now()}`,
+  getArray: () => sendRequest(config_ARRAY.apiUrl,"/data"),
   insertArray:(key) => sendRequest(config_ARRAY.apiUrl,"/insert_Array","POST",{ key }),
   removeArray:(key) => sendRequest(config_ARRAY.apiUrl,"/delete_Array","POST",{ key }),
   BubbleSort:() => sendRequest(config_ARRAY.apiUrl,"/Bubble_Sort"),
