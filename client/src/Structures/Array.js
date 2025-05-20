@@ -1,5 +1,6 @@
-import React, {useState,useEffect,useRef} from "react";
+import React, {useState,useEffect,useRef,useCallback} from "react";
 import "../App.css";
+import { gsap } from "gsap";
 import { Button, Modal } from "react-bootstrap";
 import { ARRAY_API } from "../api"; 
 
@@ -10,23 +11,29 @@ const Array = () => {
   const [highlightIndices, setHighlightIndices] = useState([]);
   const [sortActive,setSortActive] = useState(false);
   const [swappedIndices, setSwappedIndices] = useState([]);
-  const [logs, setLogs] = useState([])
+  const [logs, setLogs] = useState([]);
+  const [, setRender] = useState(0);
+  const offsetsRef = useRef({});
   const inputRef = useRef(null);
+  const rectRefs = useRef({});
 
 
-  useEffect(() => {
-      const scrollBox = document.querySelector(".logScroll");
-      if (scrollBox) scrollBox.scrollTop = scrollBox.scrollHeight;
-      fetchArrayData();
-    }, [logs]);
-    
-
-
-  const fetchArrayData = async () => {
+const fetchArrayData = useCallback(async () => {
   const result = await ARRAY_API.getArray();
-  console.log("Fetched arrayData:", result);
-  setArrayData(result.array);
-};
+  if (!sortActive) {
+    setArrayData(result.array);
+  }
+}, [sortActive]);
+
+useEffect(() => {
+  const scrollBox = document.querySelector(".logScroll");
+  if (scrollBox) scrollBox.scrollTop = scrollBox.scrollHeight;
+  fetchArrayData();
+}, [logs, fetchArrayData]);
+
+    
+const forceRender = () => setRender((prev) => prev + 1);
+
 
 
  const handleInsert = async () =>{
@@ -82,13 +89,13 @@ const Array = () => {
       }
       };
   const BubbleSort = async () => {
-  setSortActive(true);
-  try {
+    setSortActive(true);
     const result = await ARRAY_API.BubbleSort();
     const steps = result.steps;
     const finalSortedArray = result.sorted_array;
-    let i = 0;
 
+    let i = 0;
+    let localArray = [...arrayData];
     const processStep = () => {
       if (i >= steps.length) {
         setHighlightIndices([]);
@@ -99,33 +106,84 @@ const Array = () => {
       }
 
       const step = steps[i];
-      setArrayData(step.array);
+      const [i1, i2] = step.highlight;
+
       setHighlightIndices(step.highlight);
       setSwappedIndices(step.swapped ? step.highlight : []);
 
-      if (step.swapped && step.highlight.length === 2) {
-        const [i1, i2] = step.highlight;
+      const key1 = `${i1}`;
+      const key2 = `${i2}`;
+      const val1 = localArray[i1];  
+      const val2 = localArray[i2];
+      
+
+
+      if (step.swapped) {
+        const dx = (i2 - i1) * (60 + 20);
+        offsetsRef.current[key1] = 0;
+        offsetsRef.current[key2] = 0;
+        
         setLogs((prev) => [
           ...prev,
           <span key={prev.length}>
-            Swapped <strong style={{ color: "red" }}>{step.array[i2]}</strong> and <strong style={{ color: "red" }}>{step.array[i1]}</strong>
+            <strong style={{ color: "red" }}>{val1}</strong> {'>'} from <strong style={{ color: "red" }}>{val2}</strong>
+            <br />
+            then: Swapped <strong style={{ color: "red" }}>{val1}</strong> and <strong style={{ color: "red" }}>{val2}</strong>
           </span>
         ]);
+
+        gsap.to(offsetsRef.current, {
+          [key1]: dx,
+          [key2]: -dx,
+          duration: 1.5,
+          ease: "power2.inOut",
+          onUpdate: forceRender,
+          onComplete: () => {
+             [localArray[i1], localArray[i2]] = [localArray[i2], localArray[i1]];
+          setArrayData([...localArray]);
+
+            offsetsRef.current[key1] = 0;
+            offsetsRef.current[key2] = 0;
+            forceRender();
+            i++;
+            setTimeout(processStep, 400);
+          }
+        });
+      } else {
+        setLogs((prev) => [
+          ...prev,
+          <span key={prev.length}>
+            <strong style={{ color: "red" }}>{val1}</strong> {'>'} from <strong style={{ color: "red" }}>{val2}</strong>
+            <br />
+            then: we dont swap them
+          </span>
+        ]);
+        i++;
+        setTimeout(processStep, 1000);
       }
-
-      i++;
-
-      const delay = step.swapped ? 2000 : 1000; 
-      setTimeout(processStep, delay);
     };
 
     processStep();
-  } catch (error) {
-    console.error("BubbleSort failed:", error);
-    alert("Sorting failed.");
-    setSortActive(false);
-  }
-};
+  };
+  const handleReset = async () => {
+    setInputValue("");
+  
+    try {
+      await ARRAY_API.resetArray();
+      setLogs(""); 
+      setArrayData([]);
+  
+      
+    } catch (error) {
+      console.error("Reset failed:", error);
+      alert("An unexpected error occurred while resetting the array.");
+    }
+    finally{
+      fetchArrayData();
+    }
+  };
+
+
 
 
   
@@ -145,15 +203,22 @@ const Array = () => {
     <div className="svgContainer">
       <svg className="svg">
       <rect className="svg-bg" />
-        {arrayData.map((value, i) => {
-  const x = i * (60 + 20) + 20;
-  const y = 200;
-  let color = "grey";
-  if (swappedIndices.includes(i)) color = "green";
-  else if (highlightIndices.includes(i)) color = "yellow";
+      {arrayData.map((value, i) => {
+      const x = i * (60 + 20) + 20;
+      const y = 200;
+      const key = `${i}`;
+      let color = "grey";
+      if (swappedIndices.includes(i)) color = "green";
+      else if (highlightIndices.includes(i)) color = "yellow";
 
       return (
-        <g key={i}>
+        <g
+          key={key}
+          ref={(el) => {
+            if (el) rectRefs.current[key] = el;
+          }}
+          transform={`translate(${offsetsRef.current[key] || 0}, 0)`}
+        >
           <rect
             x={x}
             y={y}
@@ -200,9 +265,12 @@ const Array = () => {
       Explanation
     </button>
 
-    <div className="resetButtonBackground">
-      {/* <button className="resetButton" onClick={handleReset}>reset</button> */}
-    </div>
+     {/* Reset button */}
+      <div className="resetButtonBackground">
+        <button onClick={handleReset} className="resetButton">
+          Reset
+        </button>
+      </div>
 
     <Modal show={showExplanation} onHide={() => setShowExplanation(false)}>
       <Modal.Header closeButton>
@@ -223,3 +291,4 @@ const Array = () => {
 );
 }
 export default Array;
+

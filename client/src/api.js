@@ -67,6 +67,7 @@ export const ARRAY_API ={
   insertArray:(key) => sendRequest(config_ARRAY.apiUrl,"/insert_Array","POST",{ key }),
   removeArray:(key) => sendRequest(config_ARRAY.apiUrl,"/delete_Array","POST",{ key }),
   BubbleSort:() => sendRequest(config_ARRAY.apiUrl,"/Bubble_Sort"),
+  resetArray:() => sendRequest(config_ARRAY.apiUrl,"/reset_array"),
 }
 
 

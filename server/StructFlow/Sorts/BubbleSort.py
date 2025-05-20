@@ -6,19 +6,19 @@ def bubble_sort(array):
     for i in range(n):
         for j in range(n - i - 1):
             step = {
-                "array": arr_copy.copy(),
                 "highlight": [j, j + 1],
                 "swapped": False
             }
 
             if arr_copy[j] > arr_copy[j + 1]:
                 arr_copy[j], arr_copy[j + 1] = arr_copy[j + 1], arr_copy[j]
-                step["array"] = arr_copy.copy()
                 step["swapped"] = True
 
+            step["array"] = arr_copy.copy()
             steps.append(step)
+            print(step)
 
     return {
         "steps": steps,
-        "sorted_array": arr_copy 
+        "sorted_array": arr_copy
     }

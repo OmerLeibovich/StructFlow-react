@@ -46,3 +46,9 @@ def Bubble_Sort():
     steps = bubble_sort(array)
     array = steps["sorted_array"]
     return jsonify(steps), 200
+
+@app_Array.route("/reset_array",methods=["GET"])
+def reset_array():
+    global array
+    array = []
+    return jsonify({"message": "array reset"}), 200
