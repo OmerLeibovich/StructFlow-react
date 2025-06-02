@@ -1,8 +1,11 @@
 import React, {useState,useEffect,useRef,useCallback} from "react";
 import "../App.css";
-import { gsap } from "gsap";
 import { Button, Modal } from "react-bootstrap";
 import { ARRAY_API } from "../api"; 
+import { runBubbleSort }  from "../Sorts/BubbleSort";
+import { runCountingSort } from "../Sorts/CountingSort";
+import ArrayRect from "../Components/ArrayNode";
+
 
 const Array = () => {
   const [inputValue, setInputValue] = useState("");
@@ -88,83 +91,31 @@ const forceRender = () => setRender((prev) => prev + 1);
         inputRef.current?.focus();
       }
       };
-  const BubbleSort = async () => {
-    setSortActive(true);
-    const result = await ARRAY_API.BubbleSort();
-    const steps = result.steps;
-    const finalSortedArray = result.sorted_array;
-
-    let i = 0;
-    let localArray = [...arrayData];
-    const processStep = () => {
-      if (i >= steps.length) {
-        setHighlightIndices([]);
-        setSwappedIndices([]);
-        setArrayData(finalSortedArray);
-        setSortActive(false);
-        return;
-      }
-
-      const step = steps[i];
-      const [i1, i2] = step.highlight;
-
-      setHighlightIndices(step.highlight);
-      setSwappedIndices(step.swapped ? step.highlight : []);
-
-      const key1 = `${i1}`;
-      const key2 = `${i2}`;
-      const val1 = localArray[i1];  
-      const val2 = localArray[i2];
-      
-
-
-      if (step.swapped) {
-        const dx = (i2 - i1) * (60 + 20);
-        offsetsRef.current[key1] = 0;
-        offsetsRef.current[key2] = 0;
-        
-        setLogs((prev) => [
-          ...prev,
-          <span key={prev.length}>
-            <strong style={{ color: "red" }}>{val1}</strong> {'>'} from <strong style={{ color: "red" }}>{val2}</strong>
-            <br />
-            then: Swapped <strong style={{ color: "red" }}>{val1}</strong> and <strong style={{ color: "red" }}>{val2}</strong>
-          </span>
-        ]);
-
-        gsap.to(offsetsRef.current, {
-          [key1]: dx,
-          [key2]: -dx,
-          duration: 1.5,
-          ease: "power2.inOut",
-          onUpdate: forceRender,
-          onComplete: () => {
-             [localArray[i1], localArray[i2]] = [localArray[i2], localArray[i1]];
-          setArrayData([...localArray]);
-
-            offsetsRef.current[key1] = 0;
-            offsetsRef.current[key2] = 0;
-            forceRender();
-            i++;
-            setTimeout(processStep, 400);
-          }
+        const BubbleSort = async () => {
+          runBubbleSort({
+            arrayData,
+            setArrayData,
+            setHighlightIndices,
+            setSwappedIndices,
+            setLogs,
+            setSortActive,
+            offsetsRef,
+            forceRender,
+            ARRAY_API
+          });
+        };
+        const CountingSort = async () => {
+        runCountingSort({
+          arrayData,
+          setArrayData,
+          setHighlightIndices,
+          setLogs,
+          setSortActive,
+          offsetsRef,
+          forceRender,
+          ARRAY_API
         });
-      } else {
-        setLogs((prev) => [
-          ...prev,
-          <span key={prev.length}>
-            <strong style={{ color: "red" }}>{val1}</strong> {'>'} from <strong style={{ color: "red" }}>{val2}</strong>
-            <br />
-            then: we dont swap them
-          </span>
-        ]);
-        i++;
-        setTimeout(processStep, 1000);
-      }
-    };
-
-    processStep();
-  };
+      };
   const handleReset = async () => {
     setInputValue("");
   
@@ -199,48 +150,34 @@ const forceRender = () => setRender((prev) => prev + 1);
     <button onClick={handleInsert}>Insert</button>
     <button onClick={handleDelete}>Delete</button>
     <button onClick={BubbleSort}>BubbleSort</button>
+    <button onClick={CountingSort}>CountingSort</button>
 
     <div className="svgContainer">
-      <svg className="svg">
-      <rect className="svg-bg" />
-      {arrayData.map((value, i) => {
+  <svg className="svg">
+    <rect className="svg-bg" />
+    {arrayData.map((value, i) => {
       const x = i * (60 + 20) + 20;
       const y = 200;
       const key = `${i}`;
       let color = "grey";
+
       if (swappedIndices.includes(i)) color = "green";
       else if (highlightIndices.includes(i)) color = "yellow";
 
       return (
-        <g
+        <ArrayRect
           key={key}
-          ref={(el) => {
-            if (el) rectRefs.current[key] = el;
-          }}
-          transform={`translate(${offsetsRef.current[key] || 0}, 0)`}
-        >
-          <rect
-            x={x}
-            y={y}
-            width={60}
-            height={60}
-            fill={color}
-            stroke="black"
-            strokeWidth="2"
-          />
-          <text
-            x={x + 30}
-            y={y + 35}
-            textAnchor="middle"
-            fontSize="20"
-            fill="black"
-          >
-            {value}
-          </text>
-        </g>
+          i={i}
+          value={value}
+          x={x}
+          y={y}
+          color={color}
+          offset={offsetsRef.current[key] || 0}
+          rectRefs={rectRefs}
+        />
       );
     })}
-      </svg>
+  </svg>
     </div>
      {/* Log panel */}
       {logs.length > 0 && (

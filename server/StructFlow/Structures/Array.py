@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from StructFlow.Node import *
 from StructFlow.Sorts.BubbleSort import *
+from StructFlow.Sorts.CountingSort import *
 
 
 app_Array = Flask(__name__)
@@ -46,6 +47,13 @@ def Bubble_Sort():
     steps = bubble_sort(array)
     array = steps["sorted_array"]
     return jsonify(steps), 200
+
+@app_Array.route("/Counting_Sort",methods=["GET"])
+def Counting_Sort():
+    global array
+    steps = counting_sort(array)
+    array = steps["sorted_array"]
+    return jsonify (steps),200
 
 @app_Array.route("/reset_array",methods=["GET"])
 def reset_array():

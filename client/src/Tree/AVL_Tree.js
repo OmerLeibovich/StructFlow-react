@@ -327,7 +327,7 @@ const handleReset = async () => {
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value.replace(/\D/g, ""))}
-          placeholder="Insert number"
+          placeholder="Enter a domain or full URL"
         />
         <button onClick={handleInsert}>Insert</button>
         <button onClick={handleDelete}>Delete</button>
