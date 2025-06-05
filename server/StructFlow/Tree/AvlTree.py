@@ -22,15 +22,23 @@ class AVLTree:
         self.root = None
         self.visited = set()
         self.nodes = []
+        self.path = []
         self.highest = 0 
         self.max_size = 31
+        self.rotate = False
+        self.replacement = None
+
 
     def insert(self, key):
+        self.rotate = False
+        self.path = []
         self.root = self._insert(self.root, key)
 
     def _insert(self, node, key, parent=None):
         if not node:
             return TreeNode(key, parent)
+
+        self.path.append(node.key)
 
         if key < node.key:
             node.left = self._insert(node.left, key, node)
@@ -46,30 +54,39 @@ class AVLTree:
 
         # Left Left
         if balance > 1 and key < node.left.key:
+            self.rotate = True
             return self._rotate_right(node)
 
         # Right Right
         if balance < -1 and key > node.right.key:
+            self.rotate = True
             return self._rotate_left(node)
 
         # Left Right
         if balance > 1 and key > node.left.key:
             node.left = self._rotate_left(node.left)
+            self.rotate = True
             return self._rotate_right(node)
 
         # Right Left
         if balance < -1 and key < node.right.key:
             node.right = self._rotate_right(node.right)
+            self.rotate = True
             return self._rotate_left(node)
 
         return node
 
     def delete(self, key):
+        self.rotate = False
+        self.path = []
+        self.replacement = None
         self.root = self._delete(self.root, key)
 
     def _delete(self, node, key):
         if not node:
             return node
+        
+        self.path.append(node.key)
 
         if key < node.key:
             node.left = self._delete(node.left, key)
@@ -82,6 +99,7 @@ class AVLTree:
                 return node.left
 
             temp = self._min_value_node(node.right)
+            self.replacement = temp.key
             node.key = temp.key
             node.right = self._delete(node.right, temp.key)
 
@@ -92,17 +110,21 @@ class AVLTree:
 
         # Rebalance cases
         if balance > 1 and self._get_balance(node.left) >= 0:
+            self.rotate = True
             return self._rotate_right(node)
 
         if balance > 1 and self._get_balance(node.left) < 0:
             node.left = self._rotate_left(node.left)
+            self.rotate = True
             return self._rotate_right(node)
 
         if balance < -1 and self._get_balance(node.right) <= 0:
+            self.rotate = True
             return self._rotate_left(node)
 
         if balance < -1 and self._get_balance(node.right) > 0:
             node.right = self._rotate_right(node.right)
+            self.rotate = True
             return self._rotate_left(node)
 
         return node
@@ -171,9 +193,15 @@ def insert():
     try:
         key = int(data['key'])
         avl_tree.insert(key)
-        return jsonify({"status": "inserted"}), 200
+        return jsonify({
+            "status": "inserted",
+            "rotate": avl_tree.rotate,
+            "path": avl_tree.path ,
+            "root": avl_tree.root.key if avl_tree.root else None
+        }), 200
     except:
         return jsonify({"error": "Invalid input"}), 400
+
 
 @app_Avl.route('/delete', methods=['POST'])
 def delete():
@@ -181,7 +209,12 @@ def delete():
     try:
         key = int(data['key'])
         avl_tree.delete(key)
-        return jsonify({"status": "deleted"}), 200
+        return jsonify({
+            "status": "deleted",
+            "rotate": avl_tree.rotate,
+           "path": avl_tree.path,
+            "replacement": avl_tree.replacement
+            }), 200
     except:
         return jsonify({"error": "Invalid input"}), 400
 

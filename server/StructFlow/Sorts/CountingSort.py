@@ -37,7 +37,6 @@ def counting_sort(array):
         idx = count[num - min_val] - 1
         sorted_array[idx] = num
         count[num - min_val] -= 1
-        print(sorted_array)
         steps.append({
             "highlight": [idx],
             "type": "placement",

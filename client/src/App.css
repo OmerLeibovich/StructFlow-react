@@ -10,6 +10,8 @@ html, body {
 
 .App {
   text-align: center;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .background {
@@ -42,15 +44,11 @@ html, body {
   padding: 10px;
   transition: all 0.3s ease;
   word-wrap: break-word;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
 }
-
-@media (max-width: 600px) {
-  .header {
-    font-size: 16px;
-    padding: 8px;
-  }
-}
-
 
 .App-logo {
   height: 40vmin;
@@ -83,41 +81,18 @@ html, body {
   color: #61dafb;
 }
 
-.resetButtonBackground {
-  width: 100%;
-  padding: 20px;
-  box-sizing: border-box;
-  display: flex;
-  justify-content: center;
-}
-
-.spinner-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 40vw;
-  height: 70vh;
-  background-color: white;
-  border: 2px solid black;
-}
-
-.loading {
-  margin-top: 10px;
-}
-
-
-
 /* ---------------------------------
    Simulation DISPLAY AREA
 ---------------------------------- */
 .svg {
-  width: 1000px;
+  width: 100%;
+  max-width: 1000px;
   height: 600px;
   border: 1px solid black;
   display: block;
   margin: 0 auto;
 }
+
 
 .svg-bg {
   width: 100%;
@@ -155,9 +130,6 @@ html, body {
   font-size: 13px;
   flex: 1;
 }
-
-
-
 
 /* ---------------------------------
    BUTTONS
@@ -218,11 +190,20 @@ html, body {
   display: block;
   width: 100%;
 }
+
 .resetButton {
   width: 100%;
   max-width: 770px;
   height: 50px;
   font-size: 18px;
+}
+
+.resetButtonBackground {
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
 }
 
 .Explanation_Button {
@@ -250,6 +231,7 @@ html, body {
   gap: 10px;
   z-index: 1000;
 }
+
 .SortButtons {
   padding: 10px 20px;
   background-color: #007bff;
@@ -348,4 +330,127 @@ html, body {
   top: 0;
   background-color: #f2f2f2;
   z-index: 2;
+}
+
+/* ---------------------------------
+   MOBILE RESPONSIVENESS
+---------------------------------- */
+@media (max-width: 600px) {
+  .svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .header {
+    flex-direction: column;
+    font-size: 16px;
+    padding: 8px;
+  }
+
+  .resetButton {
+    width: 90%;
+    font-size: 16px;
+    height: 40px;
+  }
+
+  .resetButtonBackground {
+    padding: 10px;
+  }
+
+  .logPanel {
+    position: static;
+    width: 90%;
+    height: 200px;
+    margin: 20px auto;
+  }
+
+  .manudrawer {
+    font-size: 16px;
+    padding: 8px 14px;
+    top: 10px;
+    right: 10px;
+  }
+
+  .TableWrapper {
+    position: static;
+    width: 90%;
+    margin: 10px auto;
+    transform: none;
+  }
+}
+
+
+/* ---------------------------------
+   NODE CIRCLE (TreeCircle) STYLING
+---------------------------------- */
+
+.TreeCircle circle {
+  r: 20;               
+  stroke: black;
+  stroke-width: 2;
+}
+
+
+.TreeCircle text {
+  font-size: 16px;
+  font-weight: bold;
+  fill: white;
+  dominant-baseline: text-top;
+  text-anchor: middle;
+}
+
+/* ---------------------------------
+   MOBILE-SPECIFIC ADJUSTMENTS
+---------------------------------- */
+@media (max-width: 600px) {
+
+  .TreeCircle circle {
+    r: 20;
+  }
+
+  .TreeCircle text {
+    font-size: 12px;
+  }
+
+  .svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .header {
+    flex-direction: column;
+    font-size: 16px;
+    padding: 8px;
+  }
+
+  .resetButton {
+    width: 90%;
+    font-size: 16px;
+    height: 40px;
+  }
+
+  .resetButtonBackground {
+    padding: 10px;
+  }
+
+  .logPanel {
+    position: static;
+    width: 90%;
+    height: 200px;
+    margin: 20px auto;
+  }
+
+  .manudrawer {
+    font-size: 16px;
+    padding: 8px 14px;
+    top: 10px;
+    right: 10px;
+  }
+
+  .TableWrapper {
+    position: static;
+    width: 90%;
+    margin: 10px auto;
+    transform: none;
+  }
 }
