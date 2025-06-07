@@ -4,6 +4,7 @@ import { Button, Modal } from "react-bootstrap";
 import { ARRAY_API } from "../api"; 
 import { runBubbleSort }  from "../Sorts/BubbleSort";
 import { runCountingSort } from "../Sorts/CountingSort";
+import { runHeapSort } from "../Sorts/HeapSort";
 import ArrayRect from "../Components/ArrayNode";
 
 
@@ -116,6 +117,20 @@ const forceRender = () => setRender((prev) => prev + 1);
           ARRAY_API
         });
       };
+      const HeapSort = async () => {
+      runHeapSort({
+        arrayData,
+        setArrayData,
+        setHighlightIndices,
+        setSwappedIndices,
+        setLogs,
+        setSortActive,
+        offsetsRef,
+        forceRender,
+        ARRAY_API
+      });
+    };
+
   const handleReset = async () => {
     setInputValue("");
   
@@ -151,6 +166,7 @@ const forceRender = () => setRender((prev) => prev + 1);
     <button onClick={handleDelete}>Delete</button>
     <button onClick={BubbleSort}>BubbleSort</button>
     <button onClick={CountingSort}>CountingSort</button>
+    <button onClick={HeapSort}>HeapSort</button>
 
     <div className="svgContainer">
   <svg className="svg">

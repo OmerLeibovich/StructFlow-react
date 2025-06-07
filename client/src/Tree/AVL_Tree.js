@@ -215,9 +215,7 @@ const handleDFS = async () => {
     const res = await TREE_API.startDFS();
     setResetMode("ResetDFS");
 
-    const isNewPath = res.DFS_Targets && JSON.stringify(res.DFS_Targets) !== JSON.stringify(dfsPath.current);
-
-    if (isNewPath) {
+    if (res.DFS_Targets && JSON.stringify(res.DFS_Targets) !== JSON.stringify(dfsPath.current)) {
       setDfsMode(true);
       dfsPath.current = res.DFS_Targets;
 
@@ -236,11 +234,11 @@ const handleDFS = async () => {
   } catch (error) {
     console.error("DFS failed:", error);
     alert("DFS traversal failed. Please try again.");
-  } finally {
-    setIsProcessing(false); 
+  }
+  finally{
+    setIsProcessing(false);
   }
 };
-
 
 
 

@@ -3,6 +3,7 @@ from flask_cors import CORS
 from StructFlow.Node import *
 from StructFlow.Sorts.BubbleSort import *
 from StructFlow.Sorts.CountingSort import *
+from StructFlow.Sorts.HeapSort import *
 
 
 app_Array = Flask(__name__)
@@ -52,6 +53,13 @@ def Bubble_Sort():
 def Counting_Sort():
     global array
     steps = counting_sort(array)
+    array = steps["sorted_array"]
+    return jsonify (steps),200
+
+@app_Array.route("/Heap_Sort",methods=["GET"])
+def Heap_Sort():
+    global array
+    steps = heap_sort(array)
     array = steps["sorted_array"]
     return jsonify (steps),200
 

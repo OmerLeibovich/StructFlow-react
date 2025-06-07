@@ -196,7 +196,7 @@ def insert():
         return jsonify({
             "status": "inserted",
             "rotate": avl_tree.rotate,
-            "path": avl_tree.path ,
+            "path": avl_tree.path,
             "root": avl_tree.root.key if avl_tree.root else None
         }), 200
     except:
