@@ -69,6 +69,7 @@ export const ARRAY_API ={
   BubbleSort:() => sendRequest(config_ARRAY.apiUrl,"/Bubble_Sort"),
   CountingSort:() => sendRequest(config_ARRAY.apiUrl,"/Counting_Sort"),
   HeapSort:() => sendRequest(config_ARRAY.apiUrl,"/Heap_Sort"),
+  QuickSort:() => sendRequest(config_ARRAY.apiUrl,"/Quick_Sort"),
   resetArray:() => sendRequest(config_ARRAY.apiUrl,"/reset_array"),
 }
 

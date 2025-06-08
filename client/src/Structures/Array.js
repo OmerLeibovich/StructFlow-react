@@ -4,7 +4,8 @@ import { Button, Modal } from "react-bootstrap";
 import { ARRAY_API } from "../api"; 
 import { runBubbleSort }  from "../Sorts/BubbleSort";
 import { runCountingSort } from "../Sorts/CountingSort";
-import { runHeapSort } from "../Sorts/HeapSort";
+// import { runHeapSort } from "../Sorts/HeapSort";
+import { runQuickSort } from "../Sorts/QuickSort";
 import ArrayRect from "../Components/ArrayNode";
 
 
@@ -15,6 +16,7 @@ const Array = () => {
   const [highlightIndices, setHighlightIndices] = useState([]);
   const [sortActive,setSortActive] = useState(false);
   const [swappedIndices, setSwappedIndices] = useState([]);
+  const [countArray, setCountArray] = useState([]);
   const [logs, setLogs] = useState([]);
   const [, setRender] = useState(0);
   const offsetsRef = useRef({});
@@ -106,19 +108,48 @@ const forceRender = () => setRender((prev) => prev + 1);
           });
         };
         const CountingSort = async () => {
+            const values = arrayData;
+
+            if (values.length === 0) {
+              alert("Array is empty.");
+              return;
+            }
+
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+
+            if (max - min > 11) {
+              alert(`Range too large for Counting Sort visualization: max (${max}) - min (${min}) = ${max - min}`);
+              return;
+            }
         runCountingSort({
           arrayData,
           setArrayData,
           setHighlightIndices,
           setLogs,
           setSortActive,
+          setCountArray,
           offsetsRef,
           forceRender,
           ARRAY_API
         });
       };
-      const HeapSort = async () => {
-      runHeapSort({
+    //   const HeapSort = async () => {
+    //   runHeapSort({
+    //     arrayData,
+    //     setArrayData,
+    //     setHighlightIndices,
+    //     setSwappedIndices,
+    //     setLogs,
+    //     setSortActive,
+    //     offsetsRef,
+    //     forceRender,
+    //     ARRAY_API
+    //   });
+    // };
+
+      const QuickSort = async () => {
+      runQuickSort({
         arrayData,
         setArrayData,
         setHighlightIndices,
@@ -166,34 +197,54 @@ const forceRender = () => setRender((prev) => prev + 1);
     <button onClick={handleDelete}>Delete</button>
     <button onClick={BubbleSort}>BubbleSort</button>
     <button onClick={CountingSort}>CountingSort</button>
-    <button onClick={HeapSort}>HeapSort</button>
+    {/* <button onClick={HeapSort}>HeapSort</button> */}
+    <button onClick={QuickSort}>QuickSort</button>
 
-    <div className="svgContainer">
-  <svg className="svg">
-    <rect className="svg-bg" />
-    {arrayData.map((value, i) => {
-      const x = i * (60 + 20) + 20;
-      const y = 200;
-      const key = `${i}`;
-      let color = "grey";
+          <div className="svgContainer">
+        <svg className="svg">
+        <rect className="svg-bg" />
+          {arrayData.map((value, i) => {
+            const x = i * (60 + 20) + 20;
+            const y = 200;
+            const key = `${i}`;
+            let color = "grey";
 
-      if (swappedIndices.includes(i)) color = "green";
-      else if (highlightIndices.includes(i)) color = "yellow";
+            if (swappedIndices.includes(i)) color = "green";
+            else if (highlightIndices.includes(i)) color = "yellow";
 
-      return (
-        <ArrayRect
-          key={key}
-          i={i}
-          value={value}
-          x={x}
-          y={y}
-          color={color}
-          offset={offsetsRef.current[key] || 0}
-          rectRefs={rectRefs}
-        />
-      );
-    })}
-  </svg>
+            return (
+              <ArrayRect
+                key={key}
+                i={i}
+                value={value}
+                x={x}
+                y={y}
+                color={color}
+                offset={offsetsRef.current[key] || 0}
+                rectRefs={rectRefs}
+              />
+            );
+          })}
+
+
+          {countArray.length > 0 &&
+            countArray.map((value, i) => {
+              const x = i * (60 + 20) + 20;
+              const y = 300; 
+              return (
+                <ArrayRect
+                  key={`count-${i}`}
+                  i={i}
+                  value={value}
+                  x={x}
+                  y={y}
+                  color="lightblue"
+                  offset={0}
+                  rectRefs={rectRefs}
+                />
+              );
+            })}
+        </svg>
     </div>
      {/* Log panel */}
       {logs.length > 0 && (

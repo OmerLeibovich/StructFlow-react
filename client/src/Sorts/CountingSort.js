@@ -4,6 +4,7 @@ export const runCountingSort = async ({
   setHighlightIndices,
   setLogs,
   setSortActive,
+  setCountArray,
   ARRAY_API,
 }) => {
   setSortActive(true);
@@ -19,11 +20,13 @@ export const runCountingSort = async ({
       setHighlightIndices([]);
       setArrayData([...finalSortedArray]);
       setSortActive(false);
+      setCountArray([]); 
       return;
     }
 
     const step = steps[i];
-    const { highlight, description, array } = step;
+    const { highlight, description, array, count_array } = step;
+
 
     setHighlightIndices(highlight || []);
     setLogs((prev) => [
@@ -34,8 +37,12 @@ export const runCountingSort = async ({
  
     setArrayData([...array]);
 
+     if (count_array) {
+      setCountArray([...count_array]);
+    }
+
     i++;
-    setTimeout(processStep, 800); 
+    setTimeout(processStep, 2000); 
   };
 
   processStep();
